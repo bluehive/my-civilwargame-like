@@ -52,8 +52,8 @@
 | 言語 | **C++ 主体 + raylib（C API）** |
 | 描画・入力・音 | raylib |
 | hex UI | **テキスト（ASCII/絵文字）と簡易図形の併用** |
-| ビルド | CMake または単一 `Makefile` + mise タスク（Phase 0 で決定） |
-| ツールチェーン | `mise.toml` でコンパイラ・タスク管理 |
+| ビルド | **mise タスクのみ**（g++ 直叩き。Makefile なし） |
+| ツールチェーン | `mise.toml` で **g++ 15.2（xpack）** と **raylib 5.5** を固定 |
 | セーブ | **JSON ファイル**（人間可読・差分しやすい） |
 | DB | 使用しない |
 | 依存 | raylib を第一目標。追加は有名ライブラリのみ |
@@ -151,13 +151,15 @@
 - [x] 公開リポ作成・クローン
 - [x] `plan.md` / `README.md` 初版
 - [x] 設計判断 Issue #1 とユーザー確定の反映
-- [x] `mise.toml` スキャフォールド（wt:* + build/deps/smoke/compile）— experimental 先行
-- [x] 最小 raylib ウィンドウ（Hello）— `src/main.cpp` + `Makefile`
+- [x] `mise.toml` スキャフォールド（tools + wt:* + compile/build/smoke）
+- [x] 最小 raylib ウィンドウ（Hello）— `src/main.cpp` + mise `compile`（g++ 直叩き）
 - [x] ライセンス・`.gitignore`
+- [x] raylib = `github:raysan5/raylib@5.5`（mise tools）
+- [x] g++ = `github:xpack-dev-tools/gcc-xpack@15.2.0-1`（mise tools・15.2 固定）
+- [x] Makefile / `scripts/fetch-raylib.sh` / `vendor/` 方式は不採用
 
 **完了条件:** `mise run build` で空ウィンドウが起動する。  
-**状態 (2026-07-22):** worktree `experimental/20260722-civilwar-feat` で達成。main への PR は承認後。
-### Phase 1 — Hex マップ MVP
+**状態 (2026-07-22):** worktree `experimental/20260722-civilwar-feat` で mise 集約版を実装。### Phase 1 — Hex マップ MVP
 
 - hex グリッド: **テキスト + 簡易図形の併用**
 - 地形タイル表示（最低 3 種から開始し、9 種へ）
@@ -297,3 +299,4 @@ tests/              # ロジック単体テスト（raylib 非依存）
 | 2026-07-22 | 設計判断 Issue #1 作成 |
 | 2026-07-22 | Issue #1 のユーザー回答を `plan.md` / `README.md` に反映 |
 | 2026-07-22 | Phase 0 Hello raylib を worktree `experimental/20260722-civilwar-feat` で実験実装 |
+| 2026-07-22 | Phase 0 を mise tools（g++ 15.2 + raylib 5.5）+ タスク直叩きに差し替え。Makefile 廃止 |

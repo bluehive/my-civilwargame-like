@@ -25,16 +25,22 @@ Phase 0（リポジトリ基盤）を **experimental worktree** で先行実装�
 
 ### ビルド（Phase 0）
 
+**Makefile なし。** ツールとビルドはすべて `mise.toml` に集約。
+
+| mise tools | 内容 |
+|------------|------|
+| `github:xpack-dev-tools/gcc-xpack@15.2.0-1` | **g++ 15.2.0** 固定（xPack） |
+| `github:raysan5/raylib@5.5` | raylib 5.5 プリビルド |
 ```bash
 # worktree 上で
-mise run deps      # raylib を vendor/ に取得（初回）
-mise run compile   # ビルドのみ
-mise run smoke     # 短時間起動して自動終了（ヘッドレス検証向け）
-mise run build     # ビルド + Hello ウィンドウ起動（Esc で終了）
+mise install         # または mise run deps（tools 取得）
+mise run compile     # g++ 直叩き → build/civil-war-like
+mise run smoke       # 短時間起動して自動終了
+mise run build       # Hello ウィンドウ（Esc で終了）
+mise run clean       # build/ 削除
 ```
 
-依存: `g++`, `curl`, X11/OpenGL（Linux）。raylib は GitHub Releases のプリビルドを `scripts/fetch-raylib.sh` で取得します（`vendor/` は git 管理外）。
----
+ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。---
 
 ## ゲーム概要
 
@@ -73,9 +79,8 @@ mise run build     # ビルド + Hello ウィンドウ起動（Esc で終了）
 
 - **C++ 主体** + raylib（C API）
 - UI: テキスト/絵文字 + 色付き hex 図形の併用
-- ビルド/ツール: `mise.toml`（予定）
+- ビルド/ツール: **`mise.toml` のみ**（g++ / raylib を tools で固定、タスクで g++ 直叩き）
 - 依存は少数・有名なもののみ
-
 ---
 
 ## 開発方針

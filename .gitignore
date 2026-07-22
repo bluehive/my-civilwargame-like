@@ -2,12 +2,10 @@
 /build/
 /bin/
 *.o
-*.a
-*.so
 *.out
 civil-war-like
 
-# Vendor (raylib is fetched by scripts/fetch-raylib.sh)
+# Legacy vendor/ (Phase 0 旧方式; mise tools に移行済み)
 /vendor/
 
 # IDE / OS
@@ -21,7 +19,7 @@ civil-war-like
 test-log.md
 *.log
 
-# CMake
+# CMake (未使用・将来用)
 /CMakeCache.txt
 /CMakeFiles/
 /cmake-build-*/
