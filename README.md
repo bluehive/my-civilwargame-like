@@ -15,14 +15,25 @@
 
 ## 現状
 
-初期スキャフォールド段階です。ゲーム本体は未実装です。
+Phase 0（リポジトリ基盤）を **experimental worktree** で先行実装中です。
 
 - [x] 公開リポジトリ
 - [x] `plan.md` / `README.md`
 - [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
-- [ ] `mise.toml` + 最小ビルド（Phase 0）
+- [x] `mise.toml` + 最小ビルド（Phase 0）— worktree `experimental/20260722-civilwar-feat` 上
 - [ ] Hex マップ MVP 以降（[plan.md](./plan.md) の Phase 参照）
 
+### ビルド（Phase 0）
+
+```bash
+# worktree 上で
+mise run deps      # raylib を vendor/ に取得（初回）
+mise run compile   # ビルドのみ
+mise run smoke     # 短時間起動して自動終了（ヘッドレス検証向け）
+mise run build     # ビルド + Hello ウィンドウ起動（Esc で終了）
+```
+
+依存: `g++`, `curl`, X11/OpenGL（Linux）。raylib は GitHub Releases のプリビルドを `scripts/fetch-raylib.sh` で取得します（`vendor/` は git 管理外）。
 ---
 
 ## ゲーム概要

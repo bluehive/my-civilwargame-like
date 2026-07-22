@@ -151,12 +151,12 @@
 - [x] 公開リポ作成・クローン
 - [x] `plan.md` / `README.md` 初版
 - [x] 設計判断 Issue #1 とユーザー確定の反映
-- [ ] `mise.toml` スキャフォールド
-- [ ] 最小 raylib ウィンドウ（Hello）
-- [ ] ライセンス・`.gitignore`
+- [x] `mise.toml` スキャフォールド（wt:* + build/deps/smoke/compile）— experimental 先行
+- [x] 最小 raylib ウィンドウ（Hello）— `src/main.cpp` + `Makefile`
+- [x] ライセンス・`.gitignore`
 
-**完了条件:** `mise run build` で空ウィンドウが起動する。
-
+**完了条件:** `mise run build` で空ウィンドウが起動する。  
+**状態 (2026-07-22):** worktree `experimental/20260722-civilwar-feat` で達成。main への PR は承認後。
 ### Phase 1 — Hex マップ MVP
 
 - hex グリッド: **テキスト + 簡易図形の併用**
@@ -284,9 +284,9 @@ tests/              # ロジック単体テスト（raylib 非依存）
 ## 9. 次のアクション
 
 1. ~~設計判断 Issue にユーザーがコメント~~ → **反映済み**
-2. Phase 0 残り（mise + Hello raylib）の Issue を本リポに作成し、承認後に実装
-3. Phase 1 以降を順次 Issue 化
-
+2. ~~Phase 0 残り（mise + Hello raylib）~~ → experimental worktree で実装済み。PR 承認待ち
+3. Phase 0 の実装 Issue を本リポに作成（事後記録）し、PR で main へ
+4. Phase 1 以降を順次 Issue 化
 ---
 
 ## 10. 進捗記録
@@ -296,3 +296,4 @@ tests/              # ロジック単体テスト（raylib 非依存）
 | 2026-07-22 | リポ作成・クローン。`plan.md` / `README.md` 初版 |
 | 2026-07-22 | 設計判断 Issue #1 作成 |
 | 2026-07-22 | Issue #1 のユーザー回答を `plan.md` / `README.md` に反映 |
+| 2026-07-22 | Phase 0 Hello raylib を worktree `experimental/20260722-civilwar-feat` で実験実装 |

@@ -1,0 +1,27 @@
+# Build outputs
+/build/
+/bin/
+*.o
+*.a
+*.so
+*.out
+civil-war-like
+
+# Vendor (raylib is fetched by scripts/fetch-raylib.sh)
+/vendor/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs / local notes
+test-log.md
+*.log
+
+# CMake
+/CMakeCache.txt
+/CMakeFiles/
+/cmake-build-*/

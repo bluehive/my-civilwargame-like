@@ -290,3 +290,32 @@ git -C "$MAIN_ROOT" worktree list
 #   本リポ固定   = ~/my-worktree-civil-war-like
 #   htdp 固定    = ~/my-worktree          （別リポ・共存可）
 #   append 例    = ~/my-worktree-civil-war-like-20260722-feat
+
+# ---------------------------------------------------------------------------
+# Phase 0 — ゲーム本体ビルド（experimental: この worktree で先行）
+#   mise run deps    # raylib 取得
+#   mise run build   # コンパイル + Hello ウィンドウ（完了条件）
+#   mise run smoke   # 自動終了スモーク
+#   mise run compile # コンパイルのみ
+#   mise run clean   # build/ 削除
+# ---------------------------------------------------------------------------
+
+[tasks.deps]
+description = "raylib プリビルドを vendor/ に取得"
+run = "bash scripts/fetch-raylib.sh"
+
+[tasks.compile]
+description = "civil-war-like をコンパイル（ウィンドウは起動しない）"
+run = "make compile"
+
+[tasks.build]
+description = "ビルド後に Hello ウィンドウを起動（Phase 0 完了条件）"
+run = "make run"
+
+[tasks.smoke]
+description = "ビルド後に短時間だけ起動して自動終了"
+run = "make smoke"
+
+[tasks.clean]
+description = "ビルド成果物を削除（vendor は残す）"
+run = "make clean"
