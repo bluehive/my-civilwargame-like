@@ -22,8 +22,9 @@ Phase 0–1 を **experimental worktree** で実装中です。
 - [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
 - [x] Phase 0: `mise.toml` + Hello raylib（g++ 15.2 / raylib 5.5）
 - [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）
-- [x] Phase 2: 歩兵 + ターン（[#6](https://github.com/bluehive/civil-war-like/issues/6)）— Tab 巡回 / 矢印移動
-- [ ] Phase 3 以降（[plan.md](./plan.md)）
+- [x] Phase 2: 歩兵 + ターン（[#6](https://github.com/bluehive/civil-war-like/issues/6)）
+- [x] Phase 3: 簡易戦闘（[#7](https://github.com/bluehive/civil-war-like/issues/7)）— A 攻撃 / 勝敗・引分
+- [ ] Phase 4 以降（[plan.md](./plan.md)）
 
 ### ビルド（Phase 0）
 

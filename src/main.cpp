@@ -1,5 +1,5 @@
-// Civil War Like — Phase 2: infantry + turns
-// Tab: cycle unit  |  Arrows: move 1 hex  |  Enter/Space: end turn  |  Esc: quit
+// Civil War Like — Phase 3: combat + victory
+// Tab: cycle  |  Arrows: move  |  A: attack  |  Enter/Space: end turn  |  Esc: quit
 // Smoke: CIVIL_WAR_LIKE_SMOKE=1 or --smoke
 
 #include "data/aquia_setup.hpp"
@@ -17,7 +17,7 @@ namespace {
 
 constexpr int kScreenW = 960;
 constexpr int kScreenH = 640;
-constexpr const char* kTitle = "Civil War Like — Phase 2 Infantry";
+constexpr const char* kTitle = "Civil War Like — Phase 3 Combat";
 
 bool WantSmoke(int argc, char** argv) {
   if (const char* env = std::getenv("CIVIL_WAR_LIKE_SMOKE")) {
@@ -33,6 +33,52 @@ bool WantSmoke(int argc, char** argv) {
   return false;
 }
 
+// Deterministic combat smoke: move forces toward each other and trade blows.
+void SmokeStep(cwl::Battle& battle, int frame) {
+  // Early frames: Union march south
+  if (frame == 10 || frame == 20 || frame == 30) {
+    battle.TryMoveSelected(cwl::Hex{0, 1});
+  }
+  if (frame == 35) {
+    battle.SelectNext(+1);
+  }
+  if (frame == 40 || frame == 50) {
+    battle.TryMoveSelected(cwl::Hex{0, 1});
+  }
+  if (frame == 55) {
+    battle.EndTurn();
+  }
+  // Confederacy march north
+  if (frame == 65 || frame == 75 || frame == 85) {
+    battle.TryMoveSelected(cwl::Hex{0, -1});
+  }
+  if (frame == 90) {
+    battle.SelectNext(+1);
+  }
+  if (frame == 95 || frame == 105) {
+    battle.TryMoveSelected(cwl::Hex{0, -1});
+  }
+  if (frame == 110) {
+    battle.EndTurn();
+  }
+  // Try attacks for a while
+  if (frame >= 120 && frame < 200 && (frame % 8) == 0) {
+    if (!battle.TryAttackSelected()) {
+      battle.SelectNext(+1);
+      battle.TryAttackSelected();
+    }
+  }
+  if (frame == 210) {
+    battle.EndTurn();
+  }
+  if (frame >= 220 && frame < 300 && (frame % 8) == 0) {
+    if (!battle.TryAttackSelected()) {
+      battle.SelectNext(+1);
+      battle.TryAttackSelected();
+    }
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -43,7 +89,7 @@ int main(int argc, char** argv) {
   SetTargetFPS(60);
   SetExitKey(KEY_ESCAPE);
 
-  cwl::Battle battle(cwl::Map::MakeAquiaCreek(), cwl::data::MakeAquiaInfantry());
+  cwl::Battle battle(cwl::Map::MakeAquiaCreek(), cwl::data::MakeAquiaForces());
 
   float hex_size = 28.f * 0.7f;
   const float hex_size_min = 12.f;
@@ -65,30 +111,36 @@ int main(int argc, char** argv) {
   };
 
   int frames = 0;
-  const int smoke_frames = 90;
+  const int smoke_frames = 360;  // longer to allow combat script
 
   while (!WindowShouldClose()) {
-    // --- input (keyboard only) ---
-    if (IsKeyPressed(KEY_TAB)) {
-      const bool back = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-      battle.SelectNext(back ? -1 : +1);
+    if (!battle.game_over()) {
+      if (IsKeyPressed(KEY_TAB)) {
+        const bool back =
+            IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+        battle.SelectNext(back ? -1 : +1);
+      }
+      if (IsKeyPressed(KEY_RIGHT)) {
+        battle.TryMoveSelected(cwl::HexDeltaFromArrow(0));
+      }
+      if (IsKeyPressed(KEY_LEFT)) {
+        battle.TryMoveSelected(cwl::HexDeltaFromArrow(1));
+      }
+      if (IsKeyPressed(KEY_UP)) {
+        battle.TryMoveSelected(cwl::HexDeltaFromArrow(2));
+      }
+      if (IsKeyPressed(KEY_DOWN)) {
+        battle.TryMoveSelected(cwl::HexDeltaFromArrow(3));
+      }
+      if (IsKeyPressed(KEY_A)) {
+        battle.TryAttackSelected();
+      }
+      if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
+          IsKeyPressed(KEY_SPACE)) {
+        battle.EndTurn();
+      }
     }
-    if (IsKeyPressed(KEY_RIGHT)) {
-      battle.TryMoveSelected(cwl::HexDeltaFromArrow(0));
-    }
-    if (IsKeyPressed(KEY_LEFT)) {
-      battle.TryMoveSelected(cwl::HexDeltaFromArrow(1));
-    }
-    if (IsKeyPressed(KEY_UP)) {
-      battle.TryMoveSelected(cwl::HexDeltaFromArrow(2));
-    }
-    if (IsKeyPressed(KEY_DOWN)) {
-      battle.TryMoveSelected(cwl::HexDeltaFromArrow(3));
-    }
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
-        IsKeyPressed(KEY_SPACE)) {
-      battle.EndTurn();
-    }
+
     if (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
       hex_size = hex_size < hex_size_max ? hex_size + 1.f : hex_size;
     }
@@ -96,20 +148,8 @@ int main(int argc, char** argv) {
       hex_size = hex_size > hex_size_min ? hex_size - 1.f : hex_size;
     }
 
-    // Smoke script: move once, tab, end turn once
     if (smoke) {
-      if (frames == 15) {
-        battle.TryMoveSelected(cwl::Hex{0, 1});
-      }
-      if (frames == 30) {
-        battle.SelectNext(+1);
-      }
-      if (frames == 45) {
-        battle.EndTurn();
-      }
-      if (frames == 60) {
-        battle.TryMoveSelected(cwl::Hex{0, -1});
-      }
+      SmokeStep(battle, frames);
     }
 
     const Vector2 origin = map_origin(hex_size);
@@ -123,8 +163,17 @@ int main(int argc, char** argv) {
 
     if (smoke) {
       ++frames;
-      if (frames >= smoke_frames) {
-        break;
+      if (frames >= smoke_frames || battle.game_over()) {
+        // brief hold on result if any
+        if (battle.game_over() && frames < smoke_frames) {
+          // keep drawing a few more frames
+          if (frames < smoke_frames - 30) {
+            frames = smoke_frames - 30;
+          }
+        }
+        if (frames >= smoke_frames) {
+          break;
+        }
       }
     }
   }
