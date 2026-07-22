@@ -328,6 +328,7 @@ TARGET="${BIN_DIR}/civil-war-like"
 SRCS=(
   "${ROOT}/src/main.cpp"
   "${ROOT}/src/game/map.cpp"
+  "${ROOT}/src/game/unit.cpp"
   "${ROOT}/src/render/hex_draw.cpp"
 )
 

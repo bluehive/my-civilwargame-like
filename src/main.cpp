@@ -1,9 +1,11 @@
-// Civil War Like — Phase 1 Hex map MVP
-// Arrow keys: move map cursor. Esc / close: quit.
-// Smoke: CIVIL_WAR_LIKE_SMOKE=1 or --smoke → auto-close after a few frames.
+// Civil War Like — Phase 2: infantry + turns
+// Tab: cycle unit  |  Arrows: move 1 hex  |  Enter/Space: end turn  |  Esc: quit
+// Smoke: CIVIL_WAR_LIKE_SMOKE=1 or --smoke
 
+#include "data/aquia_setup.hpp"
 #include "game/hex.hpp"
 #include "game/map.hpp"
+#include "game/unit.hpp"
 #include "render/hex_draw.hpp"
 
 #include "raylib.h"
@@ -15,7 +17,7 @@ namespace {
 
 constexpr int kScreenW = 960;
 constexpr int kScreenH = 640;
-constexpr const char* kTitle = "Civil War Like — Hex MVP";
+constexpr const char* kTitle = "Civil War Like — Phase 2 Infantry";
 
 bool WantSmoke(int argc, char** argv) {
   if (const char* env = std::getenv("CIVIL_WAR_LIKE_SMOKE")) {
@@ -31,13 +33,6 @@ bool WantSmoke(int argc, char** argv) {
   return false;
 }
 
-void TryMove(cwl::Hex& cursor, const cwl::Map& map, cwl::Hex delta) {
-  const cwl::Hex next = cwl::HexAdd(cursor, delta);
-  if (map.InBounds(next)) {
-    cursor = next;
-  }
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -48,16 +43,14 @@ int main(int argc, char** argv) {
   SetTargetFPS(60);
   SetExitKey(KEY_ESCAPE);
 
-  const cwl::Map map = cwl::Map::MakeAquiaCreek();
-  cwl::Hex cursor{map.width() / 2, map.height() / 2};
+  cwl::Battle battle(cwl::Map::MakeAquiaCreek(), cwl::data::MakeAquiaInfantry());
 
-  // ~30% smaller than previous default 28 → denser honeycomb (more hexes on screen)
-  float hex_size = 28.f * 0.7f;  // ≈ 19.6
+  float hex_size = 28.f * 0.7f;
   const float hex_size_min = 12.f;
   const float hex_size_max = 36.f;
 
   auto map_origin = [&](float size) -> Vector2 {
-    // Center the honeycomb block in the play area under the HUD
+    const auto& map = battle.map();
     const float map_w =
         cwl::HexPitchX(size) * static_cast<float>(map.width() - 1) + size * 2.f;
     const float map_h =
@@ -72,21 +65,29 @@ int main(int argc, char** argv) {
   };
 
   int frames = 0;
-  const int smoke_frames = 45;
+  const int smoke_frames = 90;
 
   while (!WindowShouldClose()) {
     // --- input (keyboard only) ---
+    if (IsKeyPressed(KEY_TAB)) {
+      const bool back = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+      battle.SelectNext(back ? -1 : +1);
+    }
     if (IsKeyPressed(KEY_RIGHT)) {
-      TryMove(cursor, map, cwl::HexDeltaFromArrow(0));
+      battle.TryMoveSelected(cwl::HexDeltaFromArrow(0));
     }
     if (IsKeyPressed(KEY_LEFT)) {
-      TryMove(cursor, map, cwl::HexDeltaFromArrow(1));
+      battle.TryMoveSelected(cwl::HexDeltaFromArrow(1));
     }
     if (IsKeyPressed(KEY_UP)) {
-      TryMove(cursor, map, cwl::HexDeltaFromArrow(2));
+      battle.TryMoveSelected(cwl::HexDeltaFromArrow(2));
     }
     if (IsKeyPressed(KEY_DOWN)) {
-      TryMove(cursor, map, cwl::HexDeltaFromArrow(3));
+      battle.TryMoveSelected(cwl::HexDeltaFromArrow(3));
+    }
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) ||
+        IsKeyPressed(KEY_SPACE)) {
+      battle.EndTurn();
     }
     if (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
       hex_size = hex_size < hex_size_max ? hex_size + 1.f : hex_size;
@@ -95,19 +96,32 @@ int main(int argc, char** argv) {
       hex_size = hex_size > hex_size_min ? hex_size - 1.f : hex_size;
     }
 
+    // Smoke script: move once, tab, end turn once
+    if (smoke) {
+      if (frames == 15) {
+        battle.TryMoveSelected(cwl::Hex{0, 1});
+      }
+      if (frames == 30) {
+        battle.SelectNext(+1);
+      }
+      if (frames == 45) {
+        battle.EndTurn();
+      }
+      if (frames == 60) {
+        battle.TryMoveSelected(cwl::Hex{0, -1});
+      }
+    }
+
     const Vector2 origin = map_origin(hex_size);
 
     BeginDrawing();
     ClearBackground(Color{28, 32, 40, 255});
-    cwl::DrawMap(map, hex_size, origin, cursor);
-    cwl::DrawHud(map, cursor, GetScreenWidth(), GetScreenHeight());
+    cwl::DrawMap(battle.map(), hex_size, origin);
+    cwl::DrawUnits(battle, hex_size, origin);
+    cwl::DrawHud(battle, GetScreenWidth(), GetScreenHeight());
     EndDrawing();
 
     if (smoke) {
-      // Nudge cursor once so smoke exercises move path
-      if (frames == 10) {
-        TryMove(cursor, map, cwl::Hex{1, 0});
-      }
       ++frames;
       if (frames >= smoke_frames) {
         break;

@@ -25,6 +25,10 @@ const char* TerrainGlyph(Terrain t);
 const char* TerrainNameJa(Terrain t);
 Terrain TerrainFromChar(char c);
 
+// Phase 2 movement: cost for infantry; -1 = impassable.
+int TerrainMoveCost(Terrain t);
+inline bool TerrainPassable(Terrain t) { return TerrainMoveCost(t) >= 0; }
+
 class Map {
  public:
   int width() const { return width_; }
