@@ -32,16 +32,20 @@ Phase 0–1 を **experimental worktree** で実装中です。
 |------------|------|
 | `github:xpack-dev-tools/gcc-xpack@15.2.0-1` | **g++ 15.2.0** 固定（xPack） |
 | `github:raysan5/raylib@5.5` | raylib 5.5 プリビルド |
+
 ```bash
 # worktree 上で
 mise install         # または mise run deps（tools 取得）
 mise run compile     # g++ 直叩き → build/civil-war-like
 mise run smoke       # 短時間起動して自動終了
-mise run build       # Hello ウィンドウ（Esc で終了）
+mise run build       # Hex マップ（Esc で終了）
 mise run clean       # build/ 削除
 ```
 
-ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。---
+操作（Phase 1）: **矢印キー**で hex カーソル移動、`+`/`-` で簡易ズーム、Esc で終了。  
+ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
+
+---
 
 ## ゲーム概要
 
