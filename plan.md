@@ -301,3 +301,4 @@ tests/              # ロジック単体テスト（raylib 非依存）
 | 2026-07-22 | Issue #1 のユーザー回答を `plan.md` / `README.md` に反映 |
 | 2026-07-22 | Phase 0 Hello raylib を worktree `experimental/20260722-civilwar-feat` で実験実装 |
 | 2026-07-22 | Phase 0 を mise tools（g++ 15.2 + raylib 5.5）+ タスク直叩きに差し替え。Makefile 廃止 |
+| 2026-07-22 | Phase 1 Hex MVP（#5 承認）: axial hex・埋め込み Aquia・矢印カーソル |
