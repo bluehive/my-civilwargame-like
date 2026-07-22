@@ -1,6 +1,10 @@
-// Civil War Like — Phase 0 Hello (raylib)
-// Empty window + title. Esc / window close to quit.
+// Civil War Like — Phase 1 Hex map MVP
+// Arrow keys: move map cursor. Esc / close: quit.
 // Smoke: CIVIL_WAR_LIKE_SMOKE=1 or --smoke → auto-close after a few frames.
+
+#include "game/hex.hpp"
+#include "game/map.hpp"
+#include "render/hex_draw.hpp"
 
 #include "raylib.h"
 
@@ -11,7 +15,7 @@ namespace {
 
 constexpr int kScreenW = 960;
 constexpr int kScreenH = 640;
-constexpr const char* kTitle = "Civil War Like";
+constexpr const char* kTitle = "Civil War Like — Hex MVP";
 
 bool WantSmoke(int argc, char** argv) {
   if (const char* env = std::getenv("CIVIL_WAR_LIKE_SMOKE")) {
@@ -27,6 +31,13 @@ bool WantSmoke(int argc, char** argv) {
   return false;
 }
 
+void TryMove(cwl::Hex& cursor, const cwl::Map& map, cwl::Hex delta) {
+  const cwl::Hex next = cwl::HexAdd(cursor, delta);
+  if (map.InBounds(next)) {
+    cursor = next;
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -37,30 +48,47 @@ int main(int argc, char** argv) {
   SetTargetFPS(60);
   SetExitKey(KEY_ESCAPE);
 
+  const cwl::Map map = cwl::Map::MakeAquiaCreek();
+  cwl::Hex cursor{map.width() / 2, map.height() / 2};
+
+  float hex_size = 28.f;
+  const Vector2 origin{80.f, 120.f};
+
   int frames = 0;
-  const int smoke_frames = 30;  // ~0.5s at 60fps
+  const int smoke_frames = 45;
 
   while (!WindowShouldClose()) {
+    // --- input (keyboard only) ---
+    if (IsKeyPressed(KEY_RIGHT)) {
+      TryMove(cursor, map, cwl::HexDeltaFromArrow(0));
+    }
+    if (IsKeyPressed(KEY_LEFT)) {
+      TryMove(cursor, map, cwl::HexDeltaFromArrow(1));
+    }
+    if (IsKeyPressed(KEY_UP)) {
+      TryMove(cursor, map, cwl::HexDeltaFromArrow(2));
+    }
+    if (IsKeyPressed(KEY_DOWN)) {
+      TryMove(cursor, map, cwl::HexDeltaFromArrow(3));
+    }
+    if (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
+      hex_size = hex_size < 48.f ? hex_size + 2.f : hex_size;
+    }
+    if (IsKeyPressed(KEY_MINUS) || IsKeyPressed(KEY_KP_SUBTRACT)) {
+      hex_size = hex_size > 16.f ? hex_size - 2.f : hex_size;
+    }
+
     BeginDrawing();
     ClearBackground(Color{28, 32, 40, 255});
-
-    const int tw = MeasureText(kTitle, 36);
-    DrawText(kTitle, (GetScreenWidth() - tw) / 2, GetScreenHeight() / 2 - 48, 36,
-             Color{220, 210, 180, 255});
-    DrawText("Phase 0 — Hello raylib", 24, 24, 20, Color{160, 170, 180, 255});
-    DrawText("Esc: quit  |  experimental worktree scaffold", 24,
-             GetScreenHeight() - 40, 18, Color{120, 130, 140, 255});
-
-    // Simple placeholder hex (foreshadow Phase 1)
-    const float cx = static_cast<float>(GetScreenWidth()) / 2.0f;
-    const float cy = static_cast<float>(GetScreenHeight()) / 2.0f + 40.0f;
-    const float r = 36.0f;
-    DrawPoly(Vector2{cx, cy}, 6, r, 0.0f, Color{70, 90, 60, 255});
-    DrawPolyLinesEx(Vector2{cx, cy}, 6, r, 0.0f, 2.0f, Color{140, 160, 100, 255});
-
+    cwl::DrawMap(map, hex_size, origin, cursor);
+    cwl::DrawHud(map, cursor, GetScreenWidth(), GetScreenHeight());
     EndDrawing();
 
     if (smoke) {
+      // Nudge cursor once so smoke exercises move path
+      if (frames == 10) {
+        TryMove(cursor, map, cwl::Hex{1, 0});
+      }
       ++frames;
       if (frames >= smoke_frames) {
         break;

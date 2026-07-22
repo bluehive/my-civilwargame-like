@@ -325,7 +325,11 @@ set -euo pipefail
 ROOT="$(pwd)"
 BIN_DIR="${ROOT}/build"
 TARGET="${BIN_DIR}/civil-war-like"
-SRC="${ROOT}/src/main.cpp"
+SRCS=(
+  "${ROOT}/src/main.cpp"
+  "${ROOT}/src/game/map.cpp"
+  "${ROOT}/src/render/hex_draw.cpp"
+)
 
 # tools 解決（mise tools で固定した backend フル名）
 RAYLIB_HOME="${RAYLIB_HOME:-$(mise where github:raysan5/raylib)}"
@@ -368,9 +372,10 @@ SYS_LIBS=(
 )
 
 "$CXX" -std=c++17 -Wall -Wextra -O2 \
+  -I"${ROOT}/src" \
   -I"${RAYLIB_HOME}/include" \
   -o "$TARGET" \
-  "$SRC" \
+  "${SRCS[@]}" \
   "${RAYLIB_HOME}/lib/libraylib.a" \
   "${SYS_LIBS[@]}"
 
@@ -378,7 +383,7 @@ echo "✅ built $TARGET"
 '''
 
 [tasks.build]
-description = "ビルド後に Hello ウィンドウを起動（Phase 0 完了条件）"
+description = "ビルド後にウィンドウを起動（Hex MVP / Esc で終了）"
 depends = ["compile"]
 run = "./build/civil-war-like"
 

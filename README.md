@@ -15,13 +15,14 @@
 
 ## 現状
 
-Phase 0（リポジトリ基盤）を **experimental worktree** で先行実装中です。
+Phase 0–1 を **experimental worktree** で実装中です。
 
 - [x] 公開リポジトリ
 - [x] `plan.md` / `README.md`
 - [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
-- [x] `mise.toml` + 最小ビルド（Phase 0）— worktree `experimental/20260722-civilwar-feat` 上
-- [ ] Hex マップ MVP 以降（[plan.md](./plan.md) の Phase 参照）
+- [x] Phase 0: `mise.toml` + Hello raylib（g++ 15.2 / raylib 5.5）
+- [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）— 矢印でカーソル、地形視認
+- [ ] Phase 2 以降（[plan.md](./plan.md)）
 
 ### ビルド（Phase 0）
 
