@@ -64,10 +64,14 @@ void DrawHexCell(Hex h, Terrain t, float size, Vector2 origin, bool selected) {
   const Vec2f c = HexToPixel(h, size, Vec2f{origin.x, origin.y});
   const Vector2 center{c.x, c.y};
   // Honeycomb: draw radius == spacing size; tiny overlap kills subpixel seams.
+  // Always draw a visible edge so cells read against dark background.
   constexpr float kRadiusScale = 1.02f;
   const float radius = size * kRadiusScale;
-  DrawFlatTopHex(center, radius, TerrainColor(t), selected,
-                 Color{255, 230, 120, 255}, 2.5f);
+  const Color edge =
+      selected ? Color{255, 230, 120, 255} : Color{40, 48, 58, 255};
+  const float edge_thick = selected ? 2.5f : 1.25f;
+  DrawFlatTopHex(center, radius, TerrainColor(t), /*outline=*/true, edge,
+                 edge_thick);
 
   const char* g = TerrainGlyph(t);
   const int fs = static_cast<int>(size * 0.5f);
