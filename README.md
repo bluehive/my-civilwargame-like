@@ -44,7 +44,8 @@ mise run build       # Hex マップ（Esc で終了）
 mise run clean       # build/ 削除
 ```
 
-操作（Phase 2）: **Tab** 手番ユニット巡回、**矢印** 1 hex 移動、**Enter/Space** 手番終了、`+`/`-` ズーム、Esc 終了。  
+操作（Phase 3）: **Tab** 巡回、**矢印** 移動、**A** 攻撃、**Enter/Space** 手番終了、Esc 終了。  
+プレイは `./build/civil-war-like`（エージェント経由の `mise run build` は途中 kill されやすい）。  
 ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
 
 ---
