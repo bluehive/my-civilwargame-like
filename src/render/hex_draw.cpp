@@ -32,16 +32,20 @@ Color TerrainColor(Terrain t) {
 void DrawHexCell(Hex h, Terrain t, float size, Vector2 origin, bool selected) {
   const Vec2f c = HexToPixel(h, size, Vec2f{origin.x, origin.y});
   const Vector2 center{c.x, c.y};
-  // DrawPoly rotation 0 with 6 sides ≈ pointy-ish; flat-top uses rotation 0 for flat top in raylib? 
-  // raylib DrawPoly: first vertex at angle rotation; rotation=0 starts at right.
-  // For flat-top, rotate 30 degrees so top/bottom edges are flat.
+  // Flat-top: raylib DrawPoly rotation 30° so top/bottom edges are horizontal.
+  // Radius == size (same unit as HexToPixel spacing) so neighbors share edges
+  // with no intentional gap. Slight overlap covers subpixel seams.
+  // PR #14: 非選択は枠なし / 選択のみハイライト.
+  constexpr float kRadiusScale = 1.01f;
+  const float radius = size * kRadiusScale;
   const float rot = 30.0f;
-  DrawPoly(center, 6, size * 0.95f, rot, TerrainColor(t));
-  DrawPolyLinesEx(center, 6, size * 0.95f, rot, selected ? 3.0f : 1.0f,
-                  selected ? Color{255, 230, 120, 255} : Color{30, 30, 35, 200});
+  DrawPoly(center, 6, radius, rot, TerrainColor(t));
+  if (selected) {
+    DrawPolyLinesEx(center, 6, radius, rot, 3.0f, Color{255, 230, 120, 255});
+  }
 
   const char* g = TerrainGlyph(t);
-  const int fs = static_cast<int>(size * 0.7f);
+  const int fs = static_cast<int>(size * 0.55f);
   const int tw = MeasureText(g, fs);
   DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
            Color{20, 20, 25, 255});
