@@ -331,3 +331,4 @@ tests/              # ロジック単体テスト（raylib 非依存）
 | 2026-07-22 | Phase 0 を mise tools（g++ 15.2 + raylib 5.5）+ タスク直叩きに差し替え。Makefile 廃止 |
 | 2026-07-22 | Phase 1 Hex MVP（#5 承認）: axial hex・埋め込み Aquia・矢印カーソル |
 | 2026-07-22 | PR #14: hex 隙間なし描画（radius=size・選択のみ枠）。UGCW マニュアル要約を plan 追記 |
+| 2026-07-22 | Phase 2 (#6 承認): 歩兵・ターン・Tab 巡回・地形コスト移動 |

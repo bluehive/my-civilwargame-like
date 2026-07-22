@@ -43,7 +43,7 @@ mise run build       # Hex マップ（Esc で終了）
 mise run clean       # build/ 削除
 ```
 
-操作（Phase 1）: **矢印キー**で hex カーソル移動、`+`/`-` で簡易ズーム、Esc で終了。  
+操作（Phase 2）: **Tab** 手番ユニット巡回、**矢印** 1 hex 移動、**Enter/Space** 手番終了、`+`/`-` ズーム、Esc 終了。  
 ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
 
 ---
