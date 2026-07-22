@@ -1,8 +1,39 @@
 #include "render/hex_draw.hpp"
 
+#include <cmath>
 #include <cstdio>
 
 namespace cwl {
+namespace {
+
+// Flat-top regular hex: vertices at 0°, 60°, … (raylib y-down still has horizontal flats).
+// Must match HexToPixel flat-top spacing or honeycomb gaps appear.
+void DrawFlatTopHex(Vector2 center, float circumradius, Color fill, bool outline,
+                    Color outline_color, float outline_thick) {
+  Vector2 pts[7];
+  for (int i = 0; i < 6; ++i) {
+    const float ang = static_cast<float>(i) * 60.0f * DEG2RAD;
+    pts[i] = Vector2{center.x + circumradius * std::cos(ang),
+                     center.y + circumradius * std::sin(ang)};
+  }
+  pts[6] = pts[0];
+  // Filled hex via triangle fan from center
+  for (int i = 0; i < 6; ++i) {
+    DrawTriangle(center, pts[i], pts[i + 1], fill);
+  }
+  if (outline) {
+    DrawLineStrip(pts, 7, outline_color);
+    // thicken slightly
+    if (outline_thick > 1.5f) {
+      DrawLineEx(pts[0], pts[1], outline_thick, outline_color);
+      for (int i = 1; i < 6; ++i) {
+        DrawLineEx(pts[i], pts[i + 1], outline_thick, outline_color);
+      }
+    }
+  }
+}
+
+}  // namespace
 
 Color TerrainColor(Terrain t) {
   switch (t) {
@@ -32,23 +63,19 @@ Color TerrainColor(Terrain t) {
 void DrawHexCell(Hex h, Terrain t, float size, Vector2 origin, bool selected) {
   const Vec2f c = HexToPixel(h, size, Vec2f{origin.x, origin.y});
   const Vector2 center{c.x, c.y};
-  // Flat-top: raylib DrawPoly rotation 30° so top/bottom edges are horizontal.
-  // Radius == size (same unit as HexToPixel spacing) so neighbors share edges
-  // with no intentional gap. Slight overlap covers subpixel seams.
-  // PR #14: 非選択は枠なし / 選択のみハイライト.
-  constexpr float kRadiusScale = 1.01f;
+  // Honeycomb: draw radius == spacing size; tiny overlap kills subpixel seams.
+  constexpr float kRadiusScale = 1.02f;
   const float radius = size * kRadiusScale;
-  const float rot = 30.0f;
-  DrawPoly(center, 6, radius, rot, TerrainColor(t));
-  if (selected) {
-    DrawPolyLinesEx(center, 6, radius, rot, 3.0f, Color{255, 230, 120, 255});
-  }
+  DrawFlatTopHex(center, radius, TerrainColor(t), selected,
+                 Color{255, 230, 120, 255}, 2.5f);
 
   const char* g = TerrainGlyph(t);
-  const int fs = static_cast<int>(size * 0.55f);
-  const int tw = MeasureText(g, fs);
-  DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
-           Color{20, 20, 25, 255});
+  const int fs = static_cast<int>(size * 0.5f);
+  if (fs >= 8) {
+    const int tw = MeasureText(g, fs);
+    DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
+             Color{20, 20, 25, 255});
+  }
 }
 
 void DrawMap(const Map& map, float size, Vector2 origin, Hex cursor) {
@@ -61,33 +88,31 @@ void DrawMap(const Map& map, float size, Vector2 origin, Hex cursor) {
 }
 
 void DrawHud(const Map& map, Hex cursor, int screen_w, int screen_h) {
-  (void)screen_w;
   const Terrain t = map.At(cursor);
-  char line[160];
+  char line[192];
   std::snprintf(line, sizeof(line),
-                "Phase 1 Hex MVP  |  cursor q=%d r=%d  |  %s (%s)", cursor.q,
-                cursor.r, TerrainNameJa(t), TerrainGlyph(t));
+                "Phase 1 Hex MVP  |  %dx%d  |  q=%d r=%d  |  %s (%s)", map.width(),
+                map.height(), cursor.q, cursor.r, TerrainNameJa(t), TerrainGlyph(t));
   DrawText(line, 12, 10, 18, Color{220, 215, 200, 255});
 
-  DrawText("Arrows: move cursor  |  Esc: quit  |  legend:", 12, 36, 16,
+  DrawText("Arrows: cursor  |  +/-: zoom  |  Esc: quit", 12, 36, 16,
            Color{160, 165, 175, 255});
 
-  // Compact legend for all 9 terrains
   int x = 12;
   const int y = 58;
   for (int i = 0; i < static_cast<int>(Terrain::Count); ++i) {
     const Terrain tr = static_cast<Terrain>(i);
-    DrawRectangle(x, y, 14, 14, TerrainColor(tr));
-    char lab[32];
-    std::snprintf(lab, sizeof(lab), "%s%s", TerrainGlyph(tr), TerrainNameJa(tr));
-    DrawText(lab, x + 18, y - 1, 14, Color{200, 200, 200, 255});
-    x += 18 + MeasureText(lab, 14) + 12;
-    if (x > screen_w - 80) {
-      break;  // avoid overflow on small windows
+    DrawRectangle(x, y, 12, 12, TerrainColor(tr));
+    char lab[24];
+    std::snprintf(lab, sizeof(lab), "%s", TerrainGlyph(tr));
+    DrawText(lab, x + 16, y - 1, 14, Color{200, 200, 200, 255});
+    x += 16 + MeasureText(lab, 14) + 10;
+    if (x > screen_w - 40) {
+      break;
     }
   }
 
-  DrawText("Aquia Creek (embedded, simplified)", 12, screen_h - 28, 16,
+  DrawText("Aquia Creek (honeycomb, embedded)", 12, screen_h - 28, 16,
            Color{120, 130, 140, 255});
 }
 

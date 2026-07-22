@@ -31,14 +31,21 @@ struct Vec2f {
   float y = 0.f;
 };
 
-// Flat-top pixel center (size = outer radius to vertex).
+// Flat-top honeycomb (size = circumradius = center → vertex).
+// Neighbor center distance = √3 * size; shared edges meet when draw radius == size.
+// Ref: https://www.redblobgames.com/grids/hexagons/#hex-to-pixel-axial
 inline Vec2f HexToPixel(Hex h, float size, Vec2f origin) {
   const float x = size * (1.5f * static_cast<float>(h.q));
   const float y =
-      size * (std::sqrt(3.f) * 0.5f * static_cast<float>(h.q) +
-              std::sqrt(3.f) * static_cast<float>(h.r));
+      size * (std::sqrt(3.f) * (static_cast<float>(h.r) +
+                               0.5f * static_cast<float>(h.q)));
   return Vec2f{origin.x + x, origin.y + y};
 }
+
+// Horizontal / vertical center pitch (for layout / map sizing).
+inline float HexPitchX(float size) { return size * 1.5f; }
+inline float HexPitchY(float size) { return size * std::sqrt(3.f); }
+
 
 // Map arrow keys → neighbor delta (MVP: cardinal axial steps).
 inline Hex HexDeltaFromArrow(int key_right_left_up_down /* 0R 1L 2U 3D */) {
