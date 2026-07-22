@@ -3,6 +3,7 @@
 親タスク: [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51)  
 リポジトリ: [bluehive/civil-war-like](https://github.com/bluehive/civil-war-like)  
 参考: [Ultimate General: Civil War](https://store.steampowered.com/app/502520/Ultimate_General_Civil_War/)（小規模ライク）  
+マニュアル: [UGCW Game Guide v1.25 (PDF)](https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/502520/manuals/UGCW_Guide_v1.25.pdf)  
 設計判断: [#1](https://github.com/bluehive/civil-war-like/issues/1)（**確定済み** — 2026-07-22）
 
 ---
@@ -16,6 +17,32 @@
 - キーボードのみ（マウス不可）
 - 見た目は PNG 最小限、**ASCII/絵文字 + 簡易図形の併用**
 - 依存は少なく、mise でビルド・ローカルテスト
+
+### 1.1 参照ゲーム要約 — Ultimate General: Civil War
+
+出典: 公式 Game Guide v1.25（上記 PDF、約 89 頁）。**ライク対象の要約**であり、本リポは小規模・ターン制・hex・キーボード専用に簡略化する（§8 非目標参照）。
+
+| 領域 | 参照ゲームの内容 | 本リポへの写像（方針） |
+|------|------------------|------------------------|
+| モード | Campaign（1861→Washington/Richmond 想定終盤）／Historical Battle／Custom Battle／Load | 5 戦地キャンペーン + 個別戦闘（Phase 5） |
+| 陣営 | Union（北）vs Confederates（南） | 同左 |
+| 戦場操作 | マップ移動（中ボタンドラッグ／カーソル）、ズーム、選択・移動・射撃・突撃・後退 | **hex 上**・**キーのみ**（Tab 巡回→方向キー）。リアルタイムは採用しない |
+| ユニット種別 | Infantry / Cavalry / Artillery / Skirmishers + 特殊: Generals, Supply Wagon | 8 種（歩兵・騎馬・大砲・銃撃・近衛・武器/物資輸送・将軍）。散兵は銃撃/歩兵ロールに吸収 |
+| 将軍 | Corps General がマップ上に存在し士気ブースト。Division/Brigade 士官は抽象。死傷の影響大 | 将軍最大 3・将軍 0 で即敗北（#1） |
+| 補給 | 弾薬は有限。Supply Wagon 半径で再補給。砲は弾薬消費大 | 武器/物資輸送隊（Phase 4） |
+| 状態異常 | Condition（疲労）、Morale（動揺→退却→潰走）、Shattered（戦役から消滅） | 損害 50% 敗北などへ簡略（負傷/撃破の表現は Phase 3） |
+| 地形 | 草地・丘・森・密林・泥・水・浅瀬・橋・家屋/堡塁など。カバー・視界・速度・精度に影響 | 9 地形（山・丘・砂・街・道・川・平地・谷・岩）。コスト/進入は Phase 2+ |
+| 勝利 | 目標地点（Objectives）確保、時間制限、戦力比バー。Mission Timer でフェーズ進行 | 期間切れ=引分／将軍0／損害50%（#1）。目標占領は後続で拡張可 |
+| 戦役 | 部隊編成・士官ランク/経験・偵察レベル・セーブ分類 | 5 戦の勝敗集計で「米国統一」。セーブは JSON（Phase 6） |
+| UI | ユニットカード、Army icons、ミニマップ、コマンドボタン、ガイド | テキスト + hex 図形 HUD（Phase 1 カーソル／以降拡張） |
+
+**ガイドから拾う設計ヒント（実装時の参照用）**
+
+- 地形は戦術の中核（高所=視界・士気・精度、森=掩蔽、水域=移動悪化）。
+- 側面・背面攻撃は士気ショックが大きい → 将来の向き/隣接ルールの参考。
+- 補給線・弾薬切れは射撃効率低下 → 輸送隊の価値。
+- 士官喪失は軍全体に波及 → 将軍保護が勝敗に直結する設計と整合。
+- 大規模リアルタイム操作（軍団 AI 委任、数十旅団）は **非目標**。小マップ・少数ユニットで「将軍視点の判断」だけを残す。
 
 ---
 
@@ -52,8 +79,8 @@
 | 言語 | **C++ 主体 + raylib（C API）** |
 | 描画・入力・音 | raylib |
 | hex UI | **テキスト（ASCII/絵文字）と簡易図形の併用** |
-| ビルド | CMake または単一 `Makefile` + mise タスク（Phase 0 で決定） |
-| ツールチェーン | `mise.toml` でコンパイラ・タスク管理 |
+| ビルド | **mise タスクのみ**（g++ 直叩き。Makefile なし） |
+| ツールチェーン | `mise.toml` で **g++ 15.2（xpack）** と **raylib 5.5** を固定 |
 | セーブ | **JSON ファイル**（人間可読・差分しやすい） |
 | DB | 使用しない |
 | 依存 | raylib を第一目標。追加は有名ライブラリのみ |
@@ -151,20 +178,23 @@
 - [x] 公開リポ作成・クローン
 - [x] `plan.md` / `README.md` 初版
 - [x] 設計判断 Issue #1 とユーザー確定の反映
-- [ ] `mise.toml` スキャフォールド
-- [ ] 最小 raylib ウィンドウ（Hello）
-- [ ] ライセンス・`.gitignore`
+- [x] `mise.toml` スキャフォールド（tools + wt:* + compile/build/smoke）
+- [x] 最小 raylib ウィンドウ（Hello）— `src/main.cpp` + mise `compile`（g++ 直叩き）
+- [x] ライセンス・`.gitignore`
+- [x] raylib = `github:raysan5/raylib@5.5`（mise tools）
+- [x] g++ = `github:xpack-dev-tools/gcc-xpack@15.2.0-1`（mise tools・15.2 固定）
+- [x] Makefile / `scripts/fetch-raylib.sh` / `vendor/` 方式は不採用
 
-**完了条件:** `mise run build` で空ウィンドウが起動する。
+**完了条件:** `mise run build` で空ウィンドウが起動する。  
+**状態 (2026-07-22):** worktree `experimental/20260722-civilwar-feat` で mise 集約版を実装。### Phase 1 — Hex マップ MVP
 
-### Phase 1 — Hex マップ MVP
+- [x] hex グリッド: **テキスト + 簡易図形の併用**（`DrawPoly` + ASCII 記号）
+- [x] 地形 9 種定義・描画（マップは平地/丘/川を多用、全種は少なくとも 1 セル）
+- [x] キーボード: 矢印でカーソル移動（Tab 巡回は Phase 2）
+- [x] 静的マップ 1 枚: Aquia Creek 簡略（`src/data/aquia_creek.hpp` 埋め込み）
 
-- hex グリッド: **テキスト + 簡易図形の併用**
-- 地形タイル表示（最低 3 種から開始し、9 種へ）
-- キーボード操作の土台（後続で Tab 巡回に接続）
-- 単一戦地の静的マップデータ（まず 1 枚）
-
-**完了条件:** キーで操作でき、地形が視認できる。
+**完了条件:** キーで操作でき、地形が視認できる。  
+**状態 (2026-07-22):** #5 承認後、`experimental/20260722-civilwar-feat` に実装。
 
 ### Phase 2 — ユニット 1 種 + ターン
 
@@ -284,9 +314,9 @@ tests/              # ロジック単体テスト（raylib 非依存）
 ## 9. 次のアクション
 
 1. ~~設計判断 Issue にユーザーがコメント~~ → **反映済み**
-2. Phase 0 残り（mise + Hello raylib）の Issue を本リポに作成し、承認後に実装
-3. Phase 1 以降を順次 Issue 化
-
+2. ~~Phase 0 残り（mise + Hello raylib）~~ → experimental worktree で実装済み。PR 承認待ち
+3. Phase 0 の実装 Issue を本リポに作成（事後記録）し、PR で main へ
+4. Phase 1 以降を順次 Issue 化
 ---
 
 ## 10. 進捗記録
@@ -296,3 +326,7 @@ tests/              # ロジック単体テスト（raylib 非依存）
 | 2026-07-22 | リポ作成・クローン。`plan.md` / `README.md` 初版 |
 | 2026-07-22 | 設計判断 Issue #1 作成 |
 | 2026-07-22 | Issue #1 のユーザー回答を `plan.md` / `README.md` に反映 |
+| 2026-07-22 | Phase 0 Hello raylib を worktree `experimental/20260722-civilwar-feat` で実験実装 |
+| 2026-07-22 | Phase 0 を mise tools（g++ 15.2 + raylib 5.5）+ タスク直叩きに差し替え。Makefile 廃止 |
+| 2026-07-22 | Phase 1 Hex MVP（#5 承認）: axial hex・埋め込み Aquia・矢印カーソル |
+| 2026-07-22 | PR #14: hex 隙間なし描画（radius=size・選択のみ枠）。UGCW マニュアル要約を plan 追記 |

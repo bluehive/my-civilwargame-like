@@ -1,10 +1,21 @@
-# civil-war-like 用 worktree タスク
+# civil-war-like 用 worktree タスク + Phase 0 ツールチェーン
 # • リポジトリルートに mise.toml を配置（未コミットでも wt:*setup が worktree へコピー）。
 # • wt:setup / wt:clean … 固定パス ~/my-worktree-civil-war-like（本リポ専用・1 本）
 # • wt:setup-append-branch … 既存 experimental 先端から別 path に枝を足す（複数可）
 # • wt:setup / wt:clean / wt:setup-append-branch はメインリポジトリ側で実行するのが安全。
 # • wt:grok はメインでも worktree でも実行可（固定 path 向け）。
 # • htdp 等の ~/my-worktree とは分離（衝突しない）。
+#
+# Phase 0 ツール（Makefile / vendor fetch なし）:
+#   g++  … github:xpack-dev-tools/gcc-xpack@15.2.0-1 (g++ 15.2.0)
+#   raylib … github:raysan5/raylib@5.5
+# ビルド: mise run deps | compile | build | smoke | clean
+# 注: mise 2025.10 系は tool_alias 未対応のため backend フル名で固定。
+
+[tools]
+# Phase 0: Linux x64 固定。他 OS は asset_pattern / platforms を足す。
+"github:xpack-dev-tools/gcc-xpack" = { version = "15.2.0-1", asset_pattern = "xpack-gcc-*-linux-x64.tar.gz" }
+"github:raysan5/raylib" = { version = "5.5", asset_pattern = "raylib-*_linux_amd64.tar.gz" }
 
 [tasks."wt:setup"]
 description = "実験用 Git worktree を作成（civil-war 固定パス）"
@@ -290,3 +301,97 @@ git -C "$MAIN_ROOT" worktree list
 #   本リポ固定   = ~/my-worktree-civil-war-like
 #   htdp 固定    = ~/my-worktree          （別リポ・共存可）
 #   append 例    = ~/my-worktree-civil-war-like-20260722-feat
+
+# ---------------------------------------------------------------------------
+# Phase 0 — ゲーム本体ビルド（Makefile なし・mise に集約）
+#   mise install     # または mise run deps
+#   mise run compile # g++ 直叩き
+#   mise run smoke   # 自動終了スモーク
+#   mise run build   # コンパイル + Hello ウィンドウ（完了条件）
+#   mise run clean
+# ---------------------------------------------------------------------------
+
+[tasks.deps]
+description = "mise tools をインストール（g++ 15.2 / raylib 5.5）"
+run = "mise install"
+
+[tasks.compile]
+description = "civil-war-like を g++ 直叩きでコンパイル（ウィンドウは起動しない）"
+depends = ["deps"]
+shell = "bash -c"
+run = '''
+set -euo pipefail
+
+ROOT="$(pwd)"
+BIN_DIR="${ROOT}/build"
+TARGET="${BIN_DIR}/civil-war-like"
+SRCS=(
+  "${ROOT}/src/main.cpp"
+  "${ROOT}/src/game/map.cpp"
+  "${ROOT}/src/render/hex_draw.cpp"
+)
+
+# tools 解決（mise tools で固定した backend フル名）
+RAYLIB_HOME="${RAYLIB_HOME:-$(mise where github:raysan5/raylib)}"
+GXX_HOME="${GXX_HOME:-$(mise where github:xpack-dev-tools/gcc-xpack)}"
+CXX="${CXX:-${GXX_HOME}/bin/g++}"
+
+if [[ ! -x "$CXX" ]]; then
+  echo "❌ g++ not found at: $CXX  (mise install を実行してください)"
+  exit 1
+fi
+if [[ ! -f "${RAYLIB_HOME}/include/raylib.h" ]]; then
+  echo "❌ raylib headers missing under: $RAYLIB_HOME"
+  exit 1
+fi
+if [[ ! -f "${RAYLIB_HOME}/lib/libraylib.a" ]]; then
+  echo "❌ libraylib.a missing under: $RAYLIB_HOME/lib"
+  exit 1
+fi
+
+# 固定バージョン確認（ドリフト検知）
+CXX_VER="$("$CXX" -dumpfullversion 2>/dev/null || "$CXX" -dumpversion)"
+echo "ℹ️  CXX=$CXX ($CXX_VER)"
+echo "ℹ️  RAYLIB_HOME=$RAYLIB_HOME"
+case "$CXX_VER" in
+  15.2*) ;;
+  *)
+    echo "❌ expected g++ 15.2.x (xpack), got: $CXX_VER"
+    exit 1
+    ;;
+esac
+
+mkdir -p "$BIN_DIR"
+
+# システム OpenGL/X11（-dev 無しホスト向けに versioned .so を直指定）
+SYS_LIBS=(
+  -lm -lpthread -ldl
+  /lib/x86_64-linux-gnu/libGLX.so.0
+  /lib/x86_64-linux-gnu/libX11.so.6
+  /lib/x86_64-linux-gnu/libGLdispatch.so.0
+)
+
+"$CXX" -std=c++17 -Wall -Wextra -O2 \
+  -I"${ROOT}/src" \
+  -I"${RAYLIB_HOME}/include" \
+  -o "$TARGET" \
+  "${SRCS[@]}" \
+  "${RAYLIB_HOME}/lib/libraylib.a" \
+  "${SYS_LIBS[@]}"
+
+echo "✅ built $TARGET"
+'''
+
+[tasks.build]
+description = "ビルド後にウィンドウを起動（Hex MVP / Esc で終了）"
+depends = ["compile"]
+run = "./build/civil-war-like"
+
+[tasks.smoke]
+description = "ビルド後に短時間だけ起動して自動終了"
+depends = ["compile"]
+run = "CIVIL_WAR_LIKE_SMOKE=1 ./build/civil-war-like --smoke"
+
+[tasks.clean]
+description = "ビルド成果物を削除（mise tools は残す）"
+run = "rm -rf build"

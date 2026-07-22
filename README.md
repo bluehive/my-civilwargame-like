@@ -15,13 +15,35 @@
 
 ## 現状
 
-初期スキャフォールド段階です。ゲーム本体は未実装です。
+Phase 0–1 を **experimental worktree** で実装中です。
 
 - [x] 公開リポジトリ
 - [x] `plan.md` / `README.md`
 - [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
-- [ ] `mise.toml` + 最小ビルド（Phase 0）
-- [ ] Hex マップ MVP 以降（[plan.md](./plan.md) の Phase 参照）
+- [x] Phase 0: `mise.toml` + Hello raylib（g++ 15.2 / raylib 5.5）
+- [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）— 矢印でカーソル、地形視認
+- [ ] Phase 2 以降（[plan.md](./plan.md)）
+
+### ビルド（Phase 0）
+
+**Makefile なし。** ツールとビルドはすべて `mise.toml` に集約。
+
+| mise tools | 内容 |
+|------------|------|
+| `github:xpack-dev-tools/gcc-xpack@15.2.0-1` | **g++ 15.2.0** 固定（xPack） |
+| `github:raysan5/raylib@5.5` | raylib 5.5 プリビルド |
+
+```bash
+# worktree 上で
+mise install         # または mise run deps（tools 取得）
+mise run compile     # g++ 直叩き → build/civil-war-like
+mise run smoke       # 短時間起動して自動終了
+mise run build       # Hex マップ（Esc で終了）
+mise run clean       # build/ 削除
+```
+
+操作（Phase 1）: **矢印キー**で hex カーソル移動、`+`/`-` で簡易ズーム、Esc で終了。  
+ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
 
 ---
 
@@ -62,9 +84,8 @@
 
 - **C++ 主体** + raylib（C API）
 - UI: テキスト/絵文字 + 色付き hex 図形の併用
-- ビルド/ツール: `mise.toml`（予定）
+- ビルド/ツール: **`mise.toml` のみ**（g++ / raylib を tools で固定、タスクで g++ 直叩き）
 - 依存は少数・有名なもののみ
-
 ---
 
 ## 開発方針

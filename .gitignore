@@ -1,0 +1,25 @@
+# Build outputs
+/build/
+/bin/
+*.o
+*.out
+civil-war-like
+
+# Legacy vendor/ (Phase 0 旧方式; mise tools に移行済み)
+/vendor/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs / local notes
+test-log.md
+*.log
+
+# CMake (未使用・将来用)
+/CMakeCache.txt
+/CMakeFiles/
+/cmake-build-*/
