@@ -81,6 +81,25 @@ Terrain TerrainFromChar(char c) {
   }
 }
 
+int TerrainMoveCost(Terrain t) {
+  switch (t) {
+    case Terrain::Plain:
+    case Terrain::Road:
+    case Terrain::Town:
+      return 1;
+    case Terrain::Hill:
+    case Terrain::Sand:
+    case Terrain::Valley:
+    case Terrain::Rock:
+      return 2;
+    case Terrain::River:
+    case Terrain::Mountain:
+      return -1;
+    default:
+      return -1;
+  }
+}
+
 Map Map::FromRows(const char* const* rows, int row_count) {
   Map m;
   if (row_count <= 0 || rows == nullptr || rows[0] == nullptr) {

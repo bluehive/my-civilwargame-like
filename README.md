@@ -21,8 +21,9 @@ Phase 0–1 を **experimental worktree** で実装中です。
 - [x] `plan.md` / `README.md`
 - [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
 - [x] Phase 0: `mise.toml` + Hello raylib（g++ 15.2 / raylib 5.5）
-- [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）— 矢印でカーソル、地形視認
-- [ ] Phase 2 以降（[plan.md](./plan.md)）
+- [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）
+- [x] Phase 2: 歩兵 + ターン（[#6](https://github.com/bluehive/civil-war-like/issues/6)）— Tab 巡回 / 矢印移動
+- [ ] Phase 3 以降（[plan.md](./plan.md)）
 
 ### ビルド（Phase 0）
 
@@ -42,7 +43,7 @@ mise run build       # Hex マップ（Esc で終了）
 mise run clean       # build/ 削除
 ```
 
-操作（Phase 1）: **矢印キー**で hex カーソル移動、`+`/`-` で簡易ズーム、Esc で終了。  
+操作（Phase 2）: **Tab** 手番ユニット巡回、**矢印** 1 hex 移動、**Enter/Space** 手番終了、`+`/`-` ズーム、Esc 終了。  
 ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
 
 ---

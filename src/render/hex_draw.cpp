@@ -6,8 +6,6 @@
 namespace cwl {
 namespace {
 
-// Flat-top regular hex: vertices at 0°, 60°, … (raylib y-down still has horizontal flats).
-// Must match HexToPixel flat-top spacing or honeycomb gaps appear.
 void DrawFlatTopHex(Vector2 center, float circumradius, Color fill, bool outline,
                     Color outline_color, float outline_thick) {
   Vector2 pts[7];
@@ -17,18 +15,12 @@ void DrawFlatTopHex(Vector2 center, float circumradius, Color fill, bool outline
                      center.y + circumradius * std::sin(ang)};
   }
   pts[6] = pts[0];
-  // Filled hex via triangle fan from center
   for (int i = 0; i < 6; ++i) {
     DrawTriangle(center, pts[i], pts[i + 1], fill);
   }
   if (outline) {
-    DrawLineStrip(pts, 7, outline_color);
-    // thicken slightly
-    if (outline_thick > 1.5f) {
-      DrawLineEx(pts[0], pts[1], outline_thick, outline_color);
-      for (int i = 1; i < 6; ++i) {
-        DrawLineEx(pts[i], pts[i + 1], outline_thick, outline_color);
-      }
+    for (int i = 0; i < 6; ++i) {
+      DrawLineEx(pts[i], pts[i + 1], outline_thick, outline_color);
     }
   }
 }
@@ -60,63 +52,85 @@ Color TerrainColor(Terrain t) {
   }
 }
 
+Color SideColor(Side s) {
+  return s == Side::Union ? Color{60, 100, 200, 255} : Color{180, 70, 60, 255};
+}
+
 void DrawHexCell(Hex h, Terrain t, float size, Vector2 origin, bool selected) {
   const Vec2f c = HexToPixel(h, size, Vec2f{origin.x, origin.y});
   const Vector2 center{c.x, c.y};
-  // Honeycomb: draw radius == spacing size; tiny overlap kills subpixel seams.
-  // Always draw a visible edge so cells read against dark background.
   constexpr float kRadiusScale = 1.02f;
   const float radius = size * kRadiusScale;
   const Color edge =
       selected ? Color{255, 230, 120, 255} : Color{40, 48, 58, 255};
   const float edge_thick = selected ? 2.5f : 1.25f;
-  DrawFlatTopHex(center, radius, TerrainColor(t), /*outline=*/true, edge,
-                 edge_thick);
+  DrawFlatTopHex(center, radius, TerrainColor(t), true, edge, edge_thick);
 
   const char* g = TerrainGlyph(t);
-  const int fs = static_cast<int>(size * 0.5f);
+  const int fs = static_cast<int>(size * 0.35f);
   if (fs >= 8) {
     const int tw = MeasureText(g, fs);
-    DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
-             Color{20, 20, 25, 255});
+    DrawText(g, static_cast<int>(c.x) - tw / 2,
+             static_cast<int>(c.y) + static_cast<int>(size * 0.15f), fs,
+             Color{20, 20, 25, 180});
   }
 }
 
-void DrawMap(const Map& map, float size, Vector2 origin, Hex cursor) {
+void DrawMap(const Map& map, float size, Vector2 origin) {
   for (int r = 0; r < map.height(); ++r) {
     for (int q = 0; q < map.width(); ++q) {
-      const Hex h{q, r};
-      DrawHexCell(h, map.At(h), size, origin, h == cursor);
+      DrawHexCell(Hex{q, r}, map.At(Hex{q, r}), size, origin, false);
     }
   }
 }
 
-void DrawHud(const Map& map, Hex cursor, int screen_w, int screen_h) {
-  const Terrain t = map.At(cursor);
-  char line[192];
-  std::snprintf(line, sizeof(line),
-                "Phase 1 Hex MVP  |  %dx%d  |  q=%d r=%d  |  %s (%s)", map.width(),
-                map.height(), cursor.q, cursor.r, TerrainNameJa(t), TerrainGlyph(t));
+void DrawUnits(const Battle& battle, float size, Vector2 origin) {
+  const int sel = battle.selected_id();
+  for (const Unit& u : battle.units()) {
+    if (!u.alive) {
+      continue;
+    }
+    const Vec2f c = HexToPixel(u.pos, size, Vec2f{origin.x, origin.y});
+    const bool selected = (u.id == sel);
+    const float ur = size * (selected ? 0.55f : 0.45f);
+    DrawCircle(static_cast<int>(c.x), static_cast<int>(c.y), ur, SideColor(u.side));
+    if (selected) {
+      DrawCircleLines(static_cast<int>(c.x), static_cast<int>(c.y), ur + 2.f,
+                      Color{255, 230, 120, 255});
+    }
+    const char* g = SideGlyph(u.side);
+    const int fs = static_cast<int>(size * 0.55f);
+    const int tw = MeasureText(g, fs);
+    DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
+             Color{245, 245, 245, 255});
+  }
+}
+
+void DrawHud(const Battle& battle, int screen_w, int screen_h) {
+  (void)screen_w;
+  const Unit* sel = battle.Selected();
+  char line[256];
+  if (sel != nullptr) {
+    const Terrain ter = battle.map().At(sel->pos);
+    std::snprintf(line, sizeof(line),
+                  "Phase 2  |  手番:%s  |  選択:%s#%d MP %d/%d  |  q=%d r=%d %s",
+                  SideNameJa(battle.active()), SideGlyph(sel->side), sel->id, sel->mp,
+                  sel->mp_max, sel->pos.q, sel->pos.r, TerrainNameJa(ter));
+  } else {
+    std::snprintf(line, sizeof(line), "Phase 2  |  手番:%s  |  (no unit)",
+                  SideNameJa(battle.active()));
+  }
   DrawText(line, 12, 10, 18, Color{220, 215, 200, 255});
 
-  DrawText("Arrows: cursor  |  +/-: zoom  |  Esc: quit", 12, 36, 16,
-           Color{160, 165, 175, 255});
+  DrawText("Tab: next unit  |  Arrows: move  |  Enter/Space: end turn  |  Esc: quit",
+           12, 36, 16, Color{160, 165, 175, 255});
 
-  int x = 12;
-  const int y = 58;
-  for (int i = 0; i < static_cast<int>(Terrain::Count); ++i) {
-    const Terrain tr = static_cast<Terrain>(i);
-    DrawRectangle(x, y, 12, 12, TerrainColor(tr));
-    char lab[24];
-    std::snprintf(lab, sizeof(lab), "%s", TerrainGlyph(tr));
-    DrawText(lab, x + 16, y - 1, 14, Color{200, 200, 200, 255});
-    x += 16 + MeasureText(lab, 14) + 10;
-    if (x > screen_w - 40) {
-      break;
-    }
-  }
+  DrawRectangle(12, 58, 14, 14, SideColor(Side::Union));
+  DrawText("U 北軍", 30, 57, 16, Color{200, 200, 210, 255});
+  DrawRectangle(100, 58, 14, 14, SideColor(Side::Confederacy));
+  DrawText("C 南軍", 118, 57, 16, Color{200, 200, 210, 255});
 
-  DrawText("Aquia Creek (honeycomb, embedded)", 12, screen_h - 28, 16,
+  DrawText("Aquia Creek — infantry only (no combat yet)", 12, screen_h - 28, 16,
            Color{120, 130, 140, 255});
 }
 
