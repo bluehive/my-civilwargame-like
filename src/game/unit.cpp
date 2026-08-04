@@ -1,12 +1,46 @@
 #include "game/unit.hpp"
 
+#include <cstdio>
+
 namespace cwl {
 
 Battle::Battle(Map map, std::vector<Unit> units)
     : map_(std::move(map)), units_(std::move(units)), active_(Side::Union) {
-  RefreshMpFor(Side::Union);
-  RefreshMpFor(Side::Confederacy);
+  for (const Unit& u : units_) {
+    initial_strength_[static_cast<int>(u.side)] += u.strength_max;
+  }
+  RefreshSide(Side::Union);
+  RefreshSide(Side::Confederacy);
   EnsureSelection();
+}
+
+int Battle::LivingStrength(Side s) const {
+  int sum = 0;
+  for (const Unit& u : units_) {
+    if (u.alive && u.side == s) {
+      sum += u.strength;
+    }
+  }
+  return sum;
+}
+
+float Battle::DamageRatio(Side s) const {
+  const int init = initial_strength_[static_cast<int>(s)];
+  if (init <= 0) {
+    return 0.f;
+  }
+  const int lost = init - LivingStrength(s);
+  return static_cast<float>(lost) / static_cast<float>(init);
+}
+
+int Battle::GeneralCount(Side s) const {
+  int n = 0;
+  for (const Unit& u : units_) {
+    if (u.alive && u.side == s && u.kind == UnitKind::General) {
+      ++n;
+    }
+  }
+  return n;
 }
 
 const Unit* Battle::Selected() const {
@@ -31,8 +65,10 @@ const Unit* Battle::OccupantAt(Hex h) const {
 }
 
 void Battle::SelectNext(int dir) {
+  if (game_over()) {
+    return;
+  }
   std::vector<int> ids;
-  ids.reserve(units_.size());
   for (const Unit& u : units_) {
     if (u.alive && u.side == active_) {
       ids.push_back(u.id);
@@ -42,7 +78,6 @@ void Battle::SelectNext(int dir) {
     selected_id_ = -1;
     return;
   }
-
   int idx = 0;
   for (size_t i = 0; i < ids.size(); ++i) {
     if (ids[i] == selected_id_) {
@@ -50,7 +85,6 @@ void Battle::SelectNext(int dir) {
       break;
     }
   }
-
   const int n = static_cast<int>(ids.size());
   if (dir >= 0) {
     idx = (idx + 1) % n;
@@ -61,6 +95,9 @@ void Battle::SelectNext(int dir) {
 }
 
 bool Battle::TryMoveSelected(Hex delta) {
+  if (game_over()) {
+    return false;
+  }
   Unit* u = Selected();
   if (u == nullptr || !u->alive || u->side != active_) {
     return false;
@@ -81,11 +118,110 @@ bool Battle::TryMoveSelected(Hex delta) {
   return true;
 }
 
+const Unit* Battle::FindAttackTarget(const Unit& attacker) const {
+  const Unit* best = nullptr;
+  int best_dist = 999;
+  int best_id = 999999;
+  for (const Unit& e : units_) {
+    if (!e.alive || e.side == attacker.side) {
+      continue;
+    }
+    const int d = HexDistance(attacker.pos, e.pos);
+    if (d < 1 || d > attacker.range) {
+      continue;
+    }
+    if (d < best_dist || (d == best_dist && e.id < best_id)) {
+      best = &e;
+      best_dist = d;
+      best_id = e.id;
+    }
+  }
+  return best;
+}
+
+bool Battle::TryAttackSelected() {
+  if (game_over()) {
+    return false;
+  }
+  Unit* atk = Selected();
+  if (atk == nullptr || !atk->alive || atk->side != active_ || atk->has_attacked) {
+    return false;
+  }
+  const Unit* target_c = FindAttackTarget(*atk);
+  if (target_c == nullptr) {
+    return false;
+  }
+  // mutable target
+  Unit* target = nullptr;
+  for (Unit& u : units_) {
+    if (u.id == target_c->id) {
+      target = &u;
+      break;
+    }
+  }
+  if (target == nullptr) {
+    return false;
+  }
+
+  const int dmg = ComputeDamage(atk->attack, target->defense);
+  ApplyDamage(*target, dmg);
+  atk->has_attacked = true;
+  EvaluateOutcome();
+  return true;
+}
+
 void Battle::EndTurn() {
+  if (game_over()) {
+    return;
+  }
   active_ = (active_ == Side::Union) ? Side::Confederacy : Side::Union;
-  RefreshMpFor(active_);
+  ++turn_index_;
+  RefreshSide(active_);
   selected_id_ = -1;
   EnsureSelection();
+  EvaluateOutcome();
+}
+
+void Battle::ApplyDamage(Unit& target, int dmg) {
+  target.strength -= dmg;
+  if (target.strength <= 0) {
+    target.strength = 0;
+    target.alive = false;
+  }
+}
+
+void Battle::EvaluateOutcome() {
+  if (result_ != BattleResult::Ongoing) {
+    return;
+  }
+  // 1) turn limit → draw
+  if (turn_index_ >= kTurnLimit) {
+    SetResult(BattleResult::Draw, "期間切れ（ターン上限）");
+    return;
+  }
+  // 2) general wiped
+  if (GeneralCount(Side::Union) == 0) {
+    SetResult(BattleResult::ConfederacyWin, "北軍将軍全滅");
+    return;
+  }
+  if (GeneralCount(Side::Confederacy) == 0) {
+    SetResult(BattleResult::UnionWin, "南軍将軍全滅");
+    return;
+  }
+  // 3) 50% casualties
+  if (DamageRatio(Side::Union) >= 0.5f) {
+    SetResult(BattleResult::ConfederacyWin, "北軍損害50%以上");
+    return;
+  }
+  if (DamageRatio(Side::Confederacy) >= 0.5f) {
+    SetResult(BattleResult::UnionWin, "南軍損害50%以上");
+    return;
+  }
+}
+
+void Battle::SetResult(BattleResult r, const char* reason) {
+  result_ = r;
+  result_reason_ = reason;
 }
 
 void Battle::EnsureSelection() {
@@ -102,10 +238,11 @@ void Battle::EnsureSelection() {
   selected_id_ = -1;
 }
 
-void Battle::RefreshMpFor(Side s) {
+void Battle::RefreshSide(Side s) {
   for (Unit& u : units_) {
     if (u.alive && u.side == s) {
       u.mp = u.mp_max;
+      u.has_attacked = false;
     }
   }
 }

@@ -26,6 +26,17 @@ inline Hex HexNeighbor(Hex h, int dir) {
   return HexAdd(h, d);
 }
 
+// Axial distance (cube metric / 2).
+inline int HexDistance(Hex a, Hex b) {
+  const int dq = a.q - b.q;
+  const int dr = a.r - b.r;
+  const int ds = (-a.q - a.r) - (-b.q - b.r);
+  const int adq = dq < 0 ? -dq : dq;
+  const int adr = dr < 0 ? -dr : dr;
+  const int ads = ds < 0 ? -ds : ds;
+  return (adq + adr + ads) / 2;
+}
+
 struct Vec2f {
   float x = 0.f;
   float y = 0.f;

@@ -25,6 +25,19 @@ void DrawFlatTopHex(Vector2 center, float circumradius, Color fill, bool outline
   }
 }
 
+const char* ResultText(BattleResult r) {
+  switch (r) {
+    case BattleResult::UnionWin:
+      return "北軍勝利";
+    case BattleResult::ConfederacyWin:
+      return "南軍勝利";
+    case BattleResult::Draw:
+      return "引き分け";
+    default:
+      return "";
+  }
+}
+
 }  // namespace
 
 Color TerrainColor(Terrain t) {
@@ -63,8 +76,8 @@ void DrawHexCell(Hex h, Terrain t, float size, Vector2 origin, bool selected) {
   const float radius = size * kRadiusScale;
   const Color edge =
       selected ? Color{255, 230, 120, 255} : Color{40, 48, 58, 255};
-  const float edge_thick = selected ? 2.5f : 1.25f;
-  DrawFlatTopHex(center, radius, TerrainColor(t), true, edge, edge_thick);
+  DrawFlatTopHex(center, radius, TerrainColor(t), true, edge,
+                 selected ? 2.5f : 1.25f);
 
   const char* g = TerrainGlyph(t);
   const int fs = static_cast<int>(size * 0.35f);
@@ -93,44 +106,79 @@ void DrawUnits(const Battle& battle, float size, Vector2 origin) {
     const Vec2f c = HexToPixel(u.pos, size, Vec2f{origin.x, origin.y});
     const bool selected = (u.id == sel);
     const float ur = size * (selected ? 0.55f : 0.45f);
-    DrawCircle(static_cast<int>(c.x), static_cast<int>(c.y), ur, SideColor(u.side));
+    Color col = SideColor(u.side);
+    if (u.kind == UnitKind::General) {
+      // Gold ring undertone for generals
+      DrawCircle(static_cast<int>(c.x), static_cast<int>(c.y), ur + 3.f,
+                 Color{200, 170, 60, 255});
+    }
+    DrawCircle(static_cast<int>(c.x), static_cast<int>(c.y), ur, col);
     if (selected) {
       DrawCircleLines(static_cast<int>(c.x), static_cast<int>(c.y), ur + 2.f,
                       Color{255, 230, 120, 255});
     }
-    const char* g = SideGlyph(u.side);
-    const int fs = static_cast<int>(size * 0.55f);
+    const char* g =
+        u.kind == UnitKind::General ? "G" : SideGlyph(u.side);
+    const int fs = static_cast<int>(size * 0.5f);
     const int tw = MeasureText(g, fs);
-    DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2, fs,
+    DrawText(g, static_cast<int>(c.x) - tw / 2, static_cast<int>(c.y) - fs / 2 - 2, fs,
              Color{245, 245, 245, 255});
+    // strength
+    char st[8];
+    std::snprintf(st, sizeof(st), "%d", u.strength);
+    const int sfs = static_cast<int>(size * 0.32f);
+    if (sfs >= 8) {
+      const int stw = MeasureText(st, sfs);
+      DrawText(st, static_cast<int>(c.x) - stw / 2,
+               static_cast<int>(c.y) + static_cast<int>(size * 0.12f), sfs,
+               Color{230, 230, 200, 255});
+    }
   }
 }
 
 void DrawHud(const Battle& battle, int screen_w, int screen_h) {
   (void)screen_w;
   const Unit* sel = battle.Selected();
-  char line[256];
-  if (sel != nullptr) {
+  char line[320];
+  if (sel != nullptr && !battle.game_over()) {
     const Terrain ter = battle.map().At(sel->pos);
-    std::snprintf(line, sizeof(line),
-                  "Phase 2  |  手番:%s  |  選択:%s#%d MP %d/%d  |  q=%d r=%d %s",
-                  SideNameJa(battle.active()), SideGlyph(sel->side), sel->id, sel->mp,
-                  sel->mp_max, sel->pos.q, sel->pos.r, TerrainNameJa(ter));
+    std::snprintf(
+        line, sizeof(line),
+        "P3 手番:%s t=%d/%d | 選択:%s#%d MP%d%s STR%d | 損害 U:%.0f%% C:%.0f%% | %s",
+        SideNameJa(battle.active()), battle.turn_index(), kTurnLimit,
+        UnitKindGlyph(sel->kind), sel->id, sel->mp,
+        sel->has_attacked ? " 攻撃済" : "", sel->strength,
+        battle.DamageRatio(Side::Union) * 100.f,
+        battle.DamageRatio(Side::Confederacy) * 100.f, TerrainNameJa(ter));
+  } else if (!battle.game_over()) {
+    std::snprintf(line, sizeof(line), "P3 手番:%s t=%d/%d", SideNameJa(battle.active()),
+                  battle.turn_index(), kTurnLimit);
   } else {
-    std::snprintf(line, sizeof(line), "Phase 2  |  手番:%s  |  (no unit)",
-                  SideNameJa(battle.active()));
+    std::snprintf(line, sizeof(line), "結果: %s — %s", ResultText(battle.result()),
+                  battle.result_reason().c_str());
   }
-  DrawText(line, 12, 10, 18, Color{220, 215, 200, 255});
+  DrawText(line, 12, 10, 16, Color{220, 215, 200, 255});
 
-  DrawText("Tab: next unit  |  Arrows: move  |  Enter/Space: end turn  |  Esc: quit",
-           12, 36, 16, Color{160, 165, 175, 255});
+  if (!battle.game_over()) {
+    DrawText(
+        "Tab: unit  |  Arrows: move  |  A: attack  |  Enter: end turn  |  Esc: quit",
+        12, 34, 15, Color{160, 165, 175, 255});
+  } else {
+    DrawText("Game over — Esc to quit", 12, 34, 18, Color{255, 200, 120, 255});
+    // big banner
+    const char* big = ResultText(battle.result());
+    const int fs = 40;
+    const int tw = MeasureText(big, fs);
+    DrawText(big, (GetScreenWidth() - tw) / 2, GetScreenHeight() / 2 - 20, fs,
+             Color{255, 230, 150, 255});
+  }
 
-  DrawRectangle(12, 58, 14, 14, SideColor(Side::Union));
-  DrawText("U 北軍", 30, 57, 16, Color{200, 200, 210, 255});
-  DrawRectangle(100, 58, 14, 14, SideColor(Side::Confederacy));
-  DrawText("C 南軍", 118, 57, 16, Color{200, 200, 210, 255});
+  DrawRectangle(12, 56, 12, 12, SideColor(Side::Union));
+  DrawText("U/G 北", 28, 54, 14, Color{200, 200, 210, 255});
+  DrawRectangle(100, 56, 12, 12, SideColor(Side::Confederacy));
+  DrawText("C/G 南", 116, 54, 14, Color{200, 200, 210, 255});
 
-  DrawText("Aquia Creek — infantry only (no combat yet)", 12, screen_h - 28, 16,
+  DrawText("Aquia — Phase 3 combat (deterministic)", 12, screen_h - 28, 14,
            Color{120, 130, 140, 255});
 }
 
