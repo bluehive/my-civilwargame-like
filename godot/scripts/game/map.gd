@@ -131,15 +131,23 @@ static func terrain_color(t: int) -> Color:
 		_:
 			return Color8(80, 80, 80)
 
-static func make_aquia_creek() -> GameMap:
+static func from_rows(rows: PackedStringArray) -> GameMap:
 	var m := GameMap.new()
-	m.height = AQUIA_ROWS.size()
-	m.width = AQUIA_ROWS[0].length()
+	m.height = rows.size()
+	m.width = rows[0].length() if rows.size() > 0 else 0
 	m._cells.clear()
-	for row in AQUIA_ROWS:
+	for row in rows:
 		for i in row.length():
 			m._cells.append(terrain_from_char(row.substr(i, 1)))
 	return m
+
+
+static func make_aquia_creek() -> GameMap:
+	return from_rows(AQUIA_ROWS)
+
+
+static func make_for_level(level: int) -> GameMap:
+	return from_rows(CampaignLevel.cleaned_rows(level))
 
 func in_bounds(h: Hex) -> bool:
 	return h.q >= 0 and h.r >= 0 and h.q < width and h.r < height

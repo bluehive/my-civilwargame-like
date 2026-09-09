@@ -15,12 +15,14 @@ var initial_strength: Array[int] = [0, 0]
 var result: int = Result.ONGOING
 var result_reason: String = ""
 var last_log: String = ""
+var level: int = 1
 # Each entry: {id, q, r, mp}
 var _move_undo: Array = []
 
-func setup() -> void:
-	game_map = GameMap.make_aquia_creek()
-	units = GameUnit.make_aquia_forces()
+func setup(p_level: int = 1) -> void:
+	level = clampi(p_level, 1, 5)
+	game_map = GameMap.make_for_level(level)
+	units = CampaignLevel.build_forces(level)
 	initial_strength = [0, 0]
 	for u in units:
 		var unit: GameUnit = u
@@ -28,7 +30,9 @@ func setup() -> void:
 	_refresh_side(GameUnit.Side.UNION)
 	_refresh_side(GameUnit.Side.CONFEDERACY)
 	_ensure_selection()
-	last_log = "戦闘開始 — 偵察S×2(MP6・探知4)／本隊探知2・接触へ進軍  Tab/WE・SD・ZC/U/A/Enter"
+	last_log = "Lv%d %s — 騎馬/銃撃が探知役  Tab/WE・SD・ZC/U/A/Enter" % [
+		level, CampaignLevel.name_ja(level)
+	]
 
 func game_over() -> bool:
 	return result != Result.ONGOING
@@ -132,12 +136,12 @@ func try_move_selected(delta: Hex) -> bool:
 
 
 func detect_radius(unit: GameUnit) -> int:
-	return GameUnit.SCOUT_DETECT if unit.is_scout() else GameUnit.ARMY_DETECT
+	return unit.detect_radius()
 
 
 func scout_contacts(side: int) -> Array:
-	## Non-scout enemies within each living unit's detect radius.
-	## Scouts: 4 / others: 2. Enemy scouts are never reported.
+	## Enemies within each living unit's detect radius.
+	## Cavalry hard-to-spot: only seen within ARMY_DETECT (2).
 	var seen: Dictionary = {}
 	var out: Array = []
 	for u in units:
@@ -147,9 +151,12 @@ func scout_contacts(side: int) -> Array:
 		var radius := detect_radius(watcher)
 		for v in units:
 			var e: GameUnit = v
-			if not e.alive or e.side == side or e.is_scout():
+			if not e.alive or e.side == side:
 				continue
-			if Hex.distance(watcher.hex, e.hex) > radius:
+			var need := radius
+			if e.is_hard_to_spot():
+				need = mini(need, GameUnit.ARMY_DETECT)
+			if Hex.distance(watcher.hex, e.hex) > need:
 				continue
 			if seen.has(e.id):
 				continue
@@ -159,13 +166,11 @@ func scout_contacts(side: int) -> Array:
 
 
 func is_spotted_by(viewer_side: int, unit: GameUnit) -> bool:
-	## Own units always known. Enemy scouts never spotted. Others need scout contact.
+	## Own units always known. Others need a contact (cavalry harder to spot).
 	if unit == null or not unit.alive:
 		return false
 	if unit.side == viewer_side:
 		return true
-	if unit.is_scout():
-		return false
 	for c in scout_contacts(viewer_side):
 		var e: GameUnit = c
 		if e.id == unit.id:

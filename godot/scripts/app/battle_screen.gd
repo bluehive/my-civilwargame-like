@@ -17,7 +17,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	state = BattleState.new()
-	state.setup()
+	state.setup(GameSession.level)
 	if board:
 		board.bind_state(state)
 	_layout_and_fit()
@@ -143,7 +143,7 @@ func _try_hex_move(event: InputEventKey) -> bool:
 
 func _run_confederate_turn() -> void:
 	_ai_busy = true
-	state.last_log = "南軍思考中（偵察接触→進軍）…"
+	state.last_log = "南軍思考中（騎馬接触→進軍）…"
 	_refresh_hud()
 	await get_tree().create_timer(0.35).timeout
 	var ids: Array[int] = []
@@ -240,10 +240,10 @@ func _refresh_hud() -> void:
 	if state.game_over():
 		status = "%s（%s）" % [state.result_name_ja(), state.result_reason]
 	var mute := "消音" if (bgm and bgm.muted) else "BGM"
-	hud.text = "アキア・クリーク | 手番:%s | 半ターン:%d/%d | %s | %s\n選択: %s\n北兵力%d  南兵力%d  北将軍%d  南将軍%d" % [
-		side, state.turn_index, BattleState.TURN_LIMIT, status, mute, sel_txt,
+	hud.text = "Lv%d %s | 手番:%s | 半ターン:%d/%d | %s | %s\n選択: %s\n北兵力%d  南兵力%d  北将軍%d  南将軍%d" % [
+		state.level, CampaignLevel.name_ja(state.level), side, state.turn_index, BattleState.TURN_LIMIT, status, mute, sel_txt,
 		state.living_strength(GameUnit.Side.UNION), state.living_strength(GameUnit.Side.CONFEDERACY),
 		state.general_count(GameUnit.Side.UNION), state.general_count(GameUnit.Side.CONFEDERACY),
 	]
 	log_label.text = state.last_log
-	help_label.text = "あなた=北軍  Tab/WE・SD・ZC/U/A/Enter  南軍=偵察AI  S=偵察(不可視)  | +/- 0 Shift+矢印 | M Esc"
+	help_label.text = "あなた=北軍  Tab/WE・SD・ZC/U/A/Enter  南軍AI  H=騎馬 R=銃撃  | +/- 0 Shift+矢印 | M Esc"

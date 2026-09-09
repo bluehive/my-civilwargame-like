@@ -41,7 +41,7 @@ static func contact_centroid(state: BattleState, side: int) -> Hex:
 
 
 static func score_hex_scout(state: BattleState, unit: GameUnit, h: Hex) -> float:
-	## Prefer distance from friendlies; mild north/south bias; avoid clustering.
+	## Cavalry/skirmisher: prefer distance from friendlies; mild north/south bias; avoid clustering.
 	var score := 0.0
 	var min_friend := 999
 	for u in state.units:
@@ -82,12 +82,13 @@ static func score_hex_army(state: BattleState, unit: GameUnit, h: Hex) -> float:
 	elif enemies >= 3:
 		score -= 4.0
 	var centroid := contact_centroid(state, unit.side)
+	var aggr := CampaignLevel.conf_aggression(state.level)
 	if centroid.q >= 0:
 		var d := Hex.distance(h, centroid)
-		score += float(12 - d) * 1.2
+		score += float(12 - d) * (1.0 * aggr)
 	else:
 		# No contact yet: mild advance north (toward Union).
-		score += float(14 - h.r) * 0.2
+		score += float(14 - h.r) * (0.15 * aggr)
 	if unit.kind == GameUnit.Kind.GENERAL:
 		score += float(friends) * 1.5
 		score -= float(enemies) * 2.5
@@ -103,7 +104,7 @@ static func score_hex_army(state: BattleState, unit: GameUnit, h: Hex) -> float:
 
 
 static func score_hex(state: BattleState, unit: GameUnit, h: Hex) -> float:
-	if unit.is_scout():
+	if unit.is_recon():
 		return score_hex_scout(state, unit, h)
 	return score_hex_army(state, unit, h)
 
@@ -142,7 +143,7 @@ static func decide_action(state: BattleState) -> String:
 	if u == null:
 		return "skip"
 	# Scouts rarely attack; army attacks when adjacent / in range.
-	if (not u.is_scout()) and state.find_attack_target(u) != null and not u.has_attacked:
+	if (not u.is_recon()) and state.find_attack_target(u) != null and not u.has_attacked:
 		var enemies := count_adj(state, u.hex, u.side, false)
 		var friends := count_adj(state, u.hex, u.side, true)
 		if enemies >= 1 or friends <= 1:
@@ -150,11 +151,11 @@ static func decide_action(state: BattleState) -> String:
 	var goal := best_destination(state, u)
 	var delta := step_toward(u.hex, goal)
 	if delta.q == 0 and delta.r == 0:
-		if (not u.is_scout()) and state.find_attack_target(u) != null and not u.has_attacked:
+		if (not u.is_recon()) and state.find_attack_target(u) != null and not u.has_attacked:
 			return "attack"
 		return "skip"
 	if state.try_move_selected(delta):
 		return "move"
-	if (not u.is_scout()) and state.find_attack_target(u) != null and not u.has_attacked:
+	if (not u.is_recon()) and state.find_attack_target(u) != null and not u.has_attacked:
 		return "attack"
 	return "skip"
