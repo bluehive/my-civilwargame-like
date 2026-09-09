@@ -23,3 +23,8 @@ test-log.md
 /CMakeCache.txt
 /CMakeFiles/
 /cmake-build-*/
+
+# Godot 4 local cache
+.godot/
+**/*.uid
+godot/.godot/

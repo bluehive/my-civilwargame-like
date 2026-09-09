@@ -168,12 +168,13 @@
 
 ### G0 — Godot プロジェクト基盤
 
-- [ ] `godot/project.godot` 作成（Godot 4）
-- [ ] シーン骨格（タイトル / 戦闘）
-- [ ] 入力マップ（Tab / 矢印 / Enter / Esc / A など）
-- [ ] README / 本 plan のパス・手順を実プロジェクトに合わせる
+- [x] `godot/project.godot` 作成（Godot 4）
+- [x] シーン骨格（タイトル / 戦闘）
+- [x] 入力マップ（Tab / 矢印 / Enter / Esc / A など）
+- [x] README / 本 plan のパス・手順を実プロジェクトに合わせる
 
 **完了条件:** Godot で空シーンが開ける。
+**状態 (2026-09-09):** `godot/` スキャフォールド追加。
 
 ### G1 — Hex マップ MVP
 
@@ -288,8 +289,9 @@ src/               # レガシー C++（変更しない）
 
 1. ~~リポジトリ名・ローカルディレクトリを `my-civilwargame-like` に変更~~
 2. ~~README / plan を Godot リライト前提に更新~~（本ドキュメント）
-3. G0: Godot プロジェクト骨格を Issue 化 → 承認後に着手
-4. レガシー `src/` は参照のみ
+3. ~~G0: Godot プロジェクト骨格~~ → `godot/` 追加済み
+4. G1（Hex マップ）を Issue 化 → 承認後に着手
+5. レガシー `src/` は参照のみ
 
 ---
 
@@ -299,3 +301,4 @@ src/               # レガシー C++（変更しない）
 |------|------|
 | 2026-07-22 | リポ作成。C++/raylib で Phase 0–3 まで（詳細は旧履歴） |
 | 2026-09-09 | リポ名を `my-civilwargame-like` に変更。Godot リライト方針で README / plan を書き換え。C++ はレガシーとして維持 |
+| 2026-09-09 | G0: `godot/` プロジェクト骨格（title/battle・InputMap）を追加。C++ 非変更 |

@@ -21,7 +21,7 @@
 
 ### Godot リライト
 
-- [ ] Godot 4 プロジェクト骨格（`godot/`）
+- [x] Godot 4 プロジェクト骨格（`godot/`）
 - [ ] Hex マップ描画・キーボード入力の移植
 - [ ] ターン制・歩兵移動の移植
 - [ ] 簡易戦闘・勝敗判定の移植
@@ -124,7 +124,7 @@ cd my-civilwargame-like
 my-civilwargame-like/
   plan.md           # 実装プラン（Godot リライト方針込み）
   README.md
-  godot/            # Godot 4 プロジェクト（これから）
+  godot/            # Godot 4 プロジェクト（G0 骨格）
   data/             # マップ・ターン上限等（共有データ予定）
   src/              # レガシー C++ / raylib（変更しない）
   mise.toml         # レガシービルド用（参考）
