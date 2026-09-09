@@ -1,58 +1,43 @@
-# Civil War Like
+# My Civil War Game Like
 
 南北戦争風の **ターン制・六角マップ地上戦**（小規模）。  
-**C++** + [raylib](https://www.raylib.com/) で実装。マウス不可・キーボード操作。見た目は **ASCII/絵文字 + 簡易図形**。
+**Godot 4** でリライト中。マウス不可・キーボード操作。見た目は **ASCII/絵文字 + 簡易図形**。
 
 | | |
 |--|--|
-| **リポジトリ** | https://github.com/bluehive/civil-war-like |
+| **リポジトリ** | https://github.com/bluehive/my-civilwargame-like |
 | **親タスク** | [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51) |
-| **設計判断** | [Issue #1](https://github.com/bluehive/civil-war-like/issues/1)（確定済み） |
+| **設計判断** | [Issue #1](https://github.com/bluehive/my-civilwargame-like/issues/1)（確定済み・ゲームルールは維持） |
 | **参考** | [Ultimate General: Civil War](https://store.steampowered.com/app/502520/Ultimate_General_Civil_War/)（ライク・小規模） |
 | **プラン** | [plan.md](./plan.md) |
+
+旧名: `civil-war-like`（GitHub / ローカルとも `my-civilwargame-like` に改名済み）
 
 ---
 
 ## 現状
 
-Phase 0–1 を **experimental worktree** で実装中です。
+**目標スタックは Godot 4。** 既存の C++ / raylib 実装は **レガシー参考実装**として残し、コードは当面いじらない。
 
-- [x] 公開リポジトリ
-- [x] `plan.md` / `README.md`
-- [x] 設計判断（[Issue #1](https://github.com/bluehive/civil-war-like/issues/1)）確定・ドキュメント反映
-- [x] Phase 0: `mise.toml` + Hello raylib（g++ 15.2 / raylib 5.5）
-- [x] Phase 1: Hex マップ MVP（[#5](https://github.com/bluehive/civil-war-like/issues/5)）
-- [x] Phase 2: 歩兵 + ターン（[#6](https://github.com/bluehive/civil-war-like/issues/6)）
-- [x] Phase 3: 簡易戦闘（[#7](https://github.com/bluehive/civil-war-like/issues/7)）— A 攻撃 / 勝敗・引分
-- [ ] Phase 4 以降（[plan.md](./plan.md)）
+### Godot リライト
 
-### ビルド（Phase 0）
+- [ ] Godot 4 プロジェクト骨格（`godot/`）
+- [ ] Hex マップ描画・キーボード入力の移植
+- [ ] ターン制・歩兵移動の移植
+- [ ] 簡易戦闘・勝敗判定の移植
+- [ ] 以降は [plan.md](./plan.md) の Godot Phase に従う
 
-**Makefile なし。** ツールとビルドはすべて `mise.toml` に集約。
+### レガシー（C++ / raylib・参考）
 
-| mise tools | 内容 |
-|------------|------|
-| `github:xpack-dev-tools/gcc-xpack@15.2.0-1` | **g++ 15.2.0** 固定（xPack） |
-| `github:raysan5/raylib@5.5` | raylib 5.5 プリビルド |
-
-```bash
-# worktree 上で
-mise install         # または mise run deps（tools 取得）
-mise run compile     # g++ 直叩き → build/civil-war-like
-mise run smoke       # 短時間起動して自動終了
-mise run build       # Hex マップ（Esc で終了）
-mise run clean       # build/ 削除
-```
-
-操作（Phase 3）: **Tab** 巡回、**矢印** 移動、**A** 攻撃、**Enter/Space** 手番終了、Esc 終了。  
-プレイは `./build/civil-war-like`（エージェント経由の `mise run build` は途中 kill されやすい）。  
-ホスト依存: X11 / OpenGL の共有ライブラリ（Linux）。`-dev` パッケージは不要（versioned `.so` をリンク）。
+- [x] Phase 0–3（Hello / Hex / 歩兵+ターン / 簡易戦闘）まで実装済み
+- 場所: `src/`（**変更しない**）
+- ビルド: 旧 `mise.toml`（g++ + raylib）。Godot 移行後は必須ではない
 
 ---
 
 ## ゲーム概要
 
-### ルール（確定）
+### ルール（確定・変更なし）
 
 | 項目 | 内容 |
 |------|------|
@@ -83,57 +68,67 @@ mise run clean       # build/ 削除
 
 ---
 
-## 技術スタック（確定）
+## 技術スタック
 
-- **C++ 主体** + raylib（C API）
-- UI: テキスト/絵文字 + 色付き hex 図形の併用
-- ビルド/ツール: **`mise.toml` のみ**（g++ / raylib を tools で固定、タスクで g++ 直叩き）
-- 依存は少数・有名なもののみ
+### これから（Godot）
+
+| 項目 | 方針 |
+|------|------|
+| エンジン | **Godot 4.x** |
+| スクリプト | **GDScript**（必要なら C# を検討） |
+| 描画・入力・音 | Godot 標準 |
+| hex UI | テキスト/絵文字 + 簡易図形（Polygon2D / ColorRect 等） |
+| セーブ | JSON（`FileAccess`） |
+| データ | `data/` にマップ・ターン上限など |
+
+### レガシー（参考・非推奨の新規作業）
+
+- C++ + raylib（C API）
+- ビルド: `mise.toml`（g++ 15.2 / raylib 5.5）
+- 詳細は旧ドキュメント履歴と `src/` を参照
+
 ---
 
 ## 開発方針
 
-- **Issue 駆動**: 実装 Issue は **本リポ** に Phase ごと。承認後に着手。進捗コメント必須
+- **Issue 駆動**: 実装 Issue は本リポに Phase ごと。承認後に着手
 - **親ボード**: [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51)
-- **ブランチ**: `main` 直接編集なし。`git worktree` で作業 → 区切りで PR
-- **環境**: Linux Mint、`mise.toml`
-- **テスト**: デスクトップで mise watch。ログは `test-log.md`。方針変更はユーザー承認
-- **コミット**: 作業ごとに commit / push（熟練 SE が git をチェック）
+- **ブランチ**: `main` 直接編集なし。作業ブランチ → PR
+- **環境**: Linux Mint、Godot 4
+- **レガシー C++**: 参照用。リライト完了まで削除しないが、**新規機能は Godot 側に書く**
+- **コミット**: 作業ごとに commit / push
 
 詳細は [plan.md](./plan.md)。
 
 ---
 
-## 必要環境（予定）
+## 必要環境（Godot）
 
 - Linux（開発は Linux Mint を想定）
-- [mise](https://mise.jdx.dev/)
-- C++ コンパイラ（g++/clang++）
-- raylib（導入方法は Phase 0 で `mise.toml` に固定）
+- [Godot 4](https://godotengine.org/)（4.3+ 推奨）
+- Git
 
 ```bash
-git clone https://github.com/bluehive/civil-war-like.git
-cd civil-war-like
-# Phase 0 完了後:
-# mise install
-# mise run build
-# mise run run
+git clone https://github.com/bluehive/my-civilwargame-like.git
+cd my-civilwargame-like
+# Godot で godot/project.godot を開く（プロジェクト追加後）
 ```
 
-ローカル作業用クローン先の例: `~/my-project/civil-war-like`
+ローカル作業先: `~/my-project/my-civilwargame-like`
 
 ---
 
-## ディレクトリ（予定）
+## ディレクトリ
 
 ```
-civil-war-like/
-  plan.md           # 実装プラン（設計判断込み）
+my-civilwargame-like/
+  plan.md           # 実装プラン（Godot リライト方針込み）
   README.md
-  mise.toml         # ツール・タスク（予定）
-  src/              # 本体（予定）
+  godot/            # Godot 4 プロジェクト（これから）
+  data/             # マップ・ターン上限等（共有データ予定）
+  src/              # レガシー C++ / raylib（変更しない）
+  mise.toml         # レガシービルド用（参考）
   tests/            # ロジックテスト（予定）
-  data/             # マップ・ターン上限等（予定）
   test-log.md       # ローカルテスト失敗ログ（予定）
 ```
 
@@ -142,12 +137,13 @@ civil-war-like/
 ## 作業の流れ
 
 1. 本リポの Issue を確認し、ユーザー承認を得る
-2. worktree でブランチを切る
-3. 実装 → テスト → commit / push
-4. Issue にコメント。必要なら PR を提案し承認後マージ
+2. ブランチを切る
+3. **Godot 側**を実装 → テスト → commit / push
+4. Issue にコメント。必要なら PR → 承認後マージ
+5. `src/`（C++）は触らない
 
 ---
 
 ## ライセンス
 
-未定（Phase 0 で追加予定）。
+リポジトリに `LICENSE` あり（既存）。
