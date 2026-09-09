@@ -1,149 +1,119 @@
 # My Civil War Game Like
 
 南北戦争風の **ターン制・六角マップ地上戦**（小規模）。  
-**Godot 4** でリライト中。マウス不可・キーボード操作。見た目は **ASCII/絵文字 + 簡易図形**。
+**Godot 4** でリライト中。マウス不可・キーボード操作。見た目は **ASCII / 絵文字 + 簡易図形**。
 
 | | |
 |--|--|
 | **リポジトリ** | https://github.com/bluehive/my-civilwargame-like |
 | **親タスク** | [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51) |
-| **設計判断** | [Issue #1](https://github.com/bluehive/my-civilwargame-like/issues/1)（確定済み・ゲームルールは維持） |
-| **参考** | [Ultimate General: Civil War](https://store.steampowered.com/app/502520/Ultimate_General_Civil_War/)（ライク・小規模） |
+| **設計判断** | [Issue #1](https://github.com/bluehive/my-civilwargame-like/issues/1)（確定・ルール維持） |
+| **参考** | [Ultimate General: Civil War](https://store.steampowered.com/app/502520/Ultimate_General_Civil_War/) |
 | **プラン** | [plan.md](./plan.md) |
 
-旧名: `civil-war-like`（GitHub / ローカルとも `my-civilwargame-like` に改名済み）
+旧名: `civil-war-like` → `my-civilwargame-like`（GitHub / ローカルとも改名済み）
+
+---
+
+## 遊び方（Godot・現行）
+
+```bash
+cd ~/my-project/godot-demos && mise exec -- godot --path ~/my-project/my-civilwargame-like/godot
+```
+
+- あなたは **北軍**。南軍は AI。
+- **タイトル**: キーボードの数字 **`1`〜`5`** で戦地（レベル）を選ぶ → **Enter / Space** で戦闘開始（Esc で終了）。テンキーも可。
+- **戦闘**: `Tab` 選択 / `W E S D Z C` 六方向移動 / `U` 取消 / `A` 攻撃（最弱優先） / `Enter` 手番終了  
+  `+/-` ズーム・`0` 全体・`Shift+矢印` パン・`M` BGM消音
+
+### レベル＝戦地（1〜5）
+
+| Lv | 戦地 | 北軍（操作ユニットが増える） | 南軍 | 地形の意図 |
+|----|------|------------------------------|------|------------|
+| 1 | アキア・クリーク (Aquia Creek) | 歩兵・将軍・騎馬（**兵力同等**） | 同規模 | クリーク／砲台（川西） |
+| 2 | 第一次ブルラン (First Bull Run) | ＋銃撃 | やや強化 | Bull Run と丘 |
+| 3 | 第二次ブルラン (Second Bull Run) | ＋大砲 | 将軍2など強化 | 尾根・街道 |
+| 4 | ストーンズ川 (Stones River) | ＋近衛・物資輸送・将軍2 | 重装 | 中央の川帯 |
+| 5 | ゲティスバーグ (Gettysburg) | ＋武器輸送など満載 | **最強**（将軍3・高ステ） | 尾根 / Round Top 寄り |
+
+### ユニット（README 確定・偵察なし）
+
+歩兵（汎用）、騎馬、武器輸送、物資輸送、大砲、**銃撃（射撃専門・近接弱）**、近衛、将軍（最大 3）
+
+| 探知 | 内容 |
+|------|------|
+| 騎馬 | **4** hex。友軍から離れて徘徊し接触 |
+| 銃撃 | **3** hex / 射程 **2** |
+| その他 | **2** hex |
+| 騎馬の秘匿 | 敵騎馬は距離 **2** まで見つかりにくい |
+| 南軍 AI | 接触地点へ本隊を進軍 |
+
+勝敗: 期間切れ→引き分け / 将軍 0→即敗北 / 損害 50%以上→敗北
 
 ---
 
 ## 現状
 
-**目標スタックは Godot 4。** 既存の C++ / raylib 実装は **レガシー参考実装**として残し、コードは当面いじらない。
+**目標スタックは Godot 4。** `src/` の C++ / raylib は **レガシー参考**（変更しない）。
 
-### Godot リライト
+### Godot
 
-- [ ] Godot 4 プロジェクト骨格（`godot/`）
-- [ ] Hex マップ描画・キーボード入力の移植
-- [ ] ターン制・歩兵移動の移植
-- [ ] 簡易戦闘・勝敗判定の移植
-- [ ] 以降は [plan.md](./plan.md) の Godot Phase に従う
+- [x] プロジェクト骨格（`godot/`）
+- [x] hex 描画・キーボード操作・ターン・戦闘・勝敗
+- [x] 南軍 AI・レベル1〜5（＝上記5戦地）・騎馬/銃撃による探知
+- [ ] 以降は [plan.md](./plan.md)
 
-### レガシー（C++ / raylib・参考）
+### レガシー（C++）
 
-- [x] Phase 0–3（Hello / Hex / 歩兵+ターン / 簡易戦闘）まで実装済み
-- 場所: `src/`（**変更しない**）
-- ビルド: 旧 `mise.toml`（g++ + raylib）。Godot 移行後は必須ではない
+- Phase 0–3 まで実装済み（`src/`）
+- ビルド: 旧 `mise.toml`（Godot 移行後は必須ではない）
 
 ---
 
-## ゲーム概要
-
-### ルール（確定・変更なし）
+## ルール（確定・変更なし）
 
 | 項目 | 内容 |
 |------|------|
 | 陣営 | 北軍 / 南軍・交互ターン |
-| マップ | 六角マス。地形: 山・丘・砂地・街・道路・川・平地・谷間・岩地 |
-| 操作 | キーボードのみ。**Tab でユニット巡回 → 方向キーで移動先** |
-| 期間 | 戦地ごとに **史実日数を簡略化したターン上限** |
-| 勝敗優先 | ①期間切れ→**引き分け** ②将軍 0→**即敗北** ③損害 50%以上→**敗北** |
+| マップ | 六角。地形: 山・丘・砂地・街・道路・川・平地・谷間・岩地 |
+| 操作 | キーボードのみ |
+| 期間 | 戦地ごとにターン上限（史実日数の簡略） |
 | キャンペーン | 5 戦地。勝利数が多い側が「米国統一」 |
-| セーブ | **JSON** で途中再開 |
-
-### ユニット
-
-歩兵（汎用）、騎馬、武器輸送、物資輸送、大砲、**銃撃（射撃専門・近接弱）**、近衛、将軍（最大 3）
-
-### 戦地（5）
-
-1. アキア・クリークの戦い (Aquia Creek)
-2. 第一次ブルランの戦い (First Bull Run)
-3. 第二次ブルランの戦い (Second Bull Run)
-4. ストーンズ川の戦い (Stones River)
-5. ゲティスバーグの戦い (Gettysburg)
-
-### その他
-
-- 簡易 BGM・環境音（後から追加）
-- グラフィックは PNG 最小限
+| セーブ | JSON で途中再開（予定含む） |
 
 ---
 
-## 技術スタック
+## 技術
 
-### これから（Godot）
-
-| 項目 | 方針 |
-|------|------|
-| エンジン | **Godot 4.x** |
-| スクリプト | **GDScript**（必要なら C# を検討） |
-| 描画・入力・音 | Godot 標準 |
-| hex UI | テキスト/絵文字 + 簡易図形（Polygon2D / ColorRect 等） |
-| セーブ | JSON（`FileAccess`） |
-| データ | `data/` にマップ・ターン上限など |
-
-### レガシー（参考・非推奨の新規作業）
-
-- C++ + raylib（C API）
-- ビルド: `mise.toml`（g++ 15.2 / raylib 5.5）
-- 詳細は旧ドキュメント履歴と `src/` を参照
+| | Godot（これから） | レガシー |
+|--|--|--|
+| エンジン | Godot 4.x / GDScript | C++ + raylib |
+| 描画・入力・音 | Godot 標準 | raylib |
+| hex UI | テキスト/絵文字 + 簡易図形 | 同上系 |
+| セーブ | `FileAccess` JSON | — |
 
 ---
 
 ## 開発方針
 
-- **Issue 駆動**: 実装 Issue は本リポに Phase ごと。承認後に着手
-- **親ボード**: [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51)
-- **ブランチ**: `main` 直接編集なし。作業ブランチ → PR
-- **環境**: Linux Mint、Godot 4
-- **レガシー C++**: 参照用。リライト完了まで削除しないが、**新規機能は Godot 側に書く**
-- **コミット**: 作業ごとに commit / push
-
-詳細は [plan.md](./plan.md)。
-
----
-
-## 必要環境（Godot）
-
-- Linux（開発は Linux Mint を想定）
-- [Godot 4](https://godotengine.org/)（4.3+ 推奨）
-- Git
-
-```bash
-git clone https://github.com/bluehive/my-civilwargame-like.git
-cd my-civilwargame-like
-# Godot で godot/project.godot を開く（プロジェクト追加後）
-```
-
-ローカル作業先: `~/my-project/my-civilwargame-like`
-
----
-
-## ディレクトリ
+- Issue 駆動。親: [my-grok-task-2026#51](https://github.com/bluehive/my-grok-task-2026/issues/51)
+- `main` 直接編集なし → 作業ブランチ → PR
+- 新規機能は **Godot のみ**。`src/` は触らない
+- 環境: Linux Mint、Godot 4（mise 経由 4.7.x 可）
+- ローカル: `~/my-project/my-civilwargame-like`
 
 ```
 my-civilwargame-like/
-  plan.md           # 実装プラン（Godot リライト方針込み）
+  plan.md
   README.md
-  godot/            # Godot 4 プロジェクト（これから）
-  data/             # マップ・ターン上限等（共有データ予定）
-  src/              # レガシー C++ / raylib（変更しない）
-  mise.toml         # レガシービルド用（参考）
-  tests/            # ロジックテスト（予定）
-  test-log.md       # ローカルテスト失敗ログ（予定）
+  godot/            # Godot 4
+  data/             # 共有データ予定
+  src/              # レガシー C++（変更しない）
+  mise.toml         # レガシービルド参考
 ```
-
----
-
-## 作業の流れ
-
-1. 本リポの Issue を確認し、ユーザー承認を得る
-2. ブランチを切る
-3. **Godot 側**を実装 → テスト → commit / push
-4. Issue にコメント。必要なら PR → 承認後マージ
-5. `src/`（C++）は触らない
 
 ---
 
 ## ライセンス
 
-リポジトリに `LICENSE` あり（既存）。
+リポジトリに `LICENSE` あり。
