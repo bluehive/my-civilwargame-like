@@ -1,16 +1,20 @@
 extends SceneTree
-
 func _init() -> void:
-	var title = load("res://scenes/title.tscn")
-	var battle = load("res://scenes/battle.tscn")
-	if title == null or battle == null:
-		push_error("FAILED load scenes")
-		quit(1)
-		return
-	var t = title.instantiate()
-	var b = battle.instantiate()
-	print("SMOKE_OK title=", t.get_class(), " children=", t.get_child_count())
-	print("SMOKE_OK battle=", b.get_class(), " children=", b.get_child_count())
-	t.free()
-	b.free()
+	var b = load("res://scenes/battle.tscn").instantiate()
+	get_root().add_child(b)
+	await process_frame
+	await process_frame
+	var st = b.state
+	for u in st.units:
+		if u.side == GameUnit.Side.CONFEDERACY and u.alive:
+			st.selected_id = u.id
+			break
+	var act = ConfederateAI.decide_action(st)
+	print("SMOKE_OK ai_act=", act)
+	b.get_node("MarchBgm").pulse_combat_tempo()
+	print("SMOKE_OK tempo=", b.get_node("MarchBgm").tempo_scale)
+	st.result = BattleState.Result.CONFEDERACY_WIN
+	st.result_reason = "test"
+	b._show_victory()
+	print("SMOKE_OK banner=", b.get_node("VictoryBanner").text)
 	quit(0)
